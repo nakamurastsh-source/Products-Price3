@@ -210,6 +210,7 @@ const SPEC_UNITS = ['kg','g','L','mL'];
 const USAGE_UNITS = ['g','kg','mL','L'];
 const ROUGHAGE_FORMS = ['コンビラップ','バラ'];
 const COMPARE_COLORS = ['var(--indigo)', 'var(--vermillion)', 'var(--moss)'];
+const MAX_ENTRY_PHOTOS = 6;
 
 function categoryType(category){
   if (category === FACILITY_CATEGORY) return 'facility';
@@ -633,7 +634,7 @@ function openAddProductModal(){
         </div>
 
         <div id="m-photo-field" class="field" style="display:none;">
-          <label for="m-photo">この記録の写真(任意・最大10枚)</label>
+          <label for="m-photo">この記録の写真(任意・最大${MAX_ENTRY_PHOTOS}枚)</label>
           <input id="m-photo" type="file" accept="image/*" multiple />
         </div>
 
@@ -689,7 +690,7 @@ function openAddProductModal(){
     newCatWrap.style.display = catSelect.value === '__new__' ? 'flex' : 'none';
     const type = categoryType(catSelect.value);
     standardFields.style.display = type === 'standard' ? 'block' : 'none';
-    photoField.style.display = type === 'facility' ? 'flex' : 'none';
+    photoField.style.display = 'flex';
     roughageFields.style.display = type === 'roughage' ? 'block' : 'none';
     const extra = extraFieldsFor(catSelect.value);
     colostrumFields.style.display = extra === 'colostrum' ? 'block' : 'none';
@@ -735,16 +736,6 @@ function openAddProductModal(){
     let entry;
     if (type === 'facility'){
       entry = { id: uid('entry'), date, price, enteredBy, memo, photoKeys: [], createdAt: Date.now() };
-      const files = Array.from(document.getElementById('m-photo').files).slice(0, 10);
-      for (const file of files){
-        try{
-          const dataUrl = await readAndCompressImage(file);
-          const photoId = uid('photo');
-          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
-          if (res){ entry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
-          else showToast('記録の写真の保存に失敗しました');
-        }catch(err){ showToast('記録の写真の保存に失敗しました'); }
-      }
     } else if (type === 'roughage'){
       const weight = parseFloat(document.getElementById('m-weight').value);
       const dmPercent = parseFloat(document.getElementById('m-dm-percent').value);
@@ -763,6 +754,7 @@ function openAddProductModal(){
         freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
         enteredBy,
         memo,
+        photoKeys: [],
         createdAt: Date.now()
       };
     } else {
@@ -780,6 +772,7 @@ function openAddProductModal(){
         usageQty, usageUnit: document.getElementById('m-usage-unit').value,
         enteredBy,
         memo,
+        photoKeys: [],
         createdAt: Date.now()
       };
       const extra = extraFieldsFor(category);
@@ -801,6 +794,18 @@ function openAddProductModal(){
         entry.animalRatio = animalRatioRaw === '' ? null : parseFloat(animalRatioRaw);
       }
     }
+
+    const entryPhotoFiles = Array.from(document.getElementById('m-photo').files).slice(0, MAX_ENTRY_PHOTOS);
+    for (const file of entryPhotoFiles){
+      try{
+        const dataUrl = await readAndCompressImage(file);
+        const photoId = uid('photo');
+        const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+        if (res){ entry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+        else showToast('記録の写真の保存に失敗しました');
+      }catch(err){ showToast('記録の写真の保存に失敗しました'); }
+    }
+
     const product = { id: uid('prod'), category, name, createdAt: Date.now(), hasPhoto: false, entries: [entry] };
 
     const productPhotoFile = document.getElementById('m-product-photo').files[0];
@@ -906,7 +911,7 @@ function openEditEntryModal(productId, entryId){
             <label for="ee-memo">メモ(任意)</label>
             <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
           </div>
-          <p class="modal-msg">写真(最大10枚)は記録一覧の「写真」ボタンから管理できます。</p>
+          <p class="modal-msg">写真(最大${MAX_ENTRY_PHOTOS}枚)は記録一覧の「写真」ボタンから管理できます。</p>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
             <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
@@ -962,6 +967,7 @@ function openEditEntryModal(productId, entryId){
             <label for="ee-memo">メモ(任意)</label>
             <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
           </div>
+          <p class="modal-msg">写真(最大${MAX_ENTRY_PHOTOS}枚)は記録一覧の「写真」ボタンから管理できます。</p>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
             <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
@@ -1046,6 +1052,7 @@ function openEditEntryModal(productId, entryId){
             <label for="ee-memo">メモ(任意)</label>
             <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
           </div>
+          <p class="modal-msg">写真(最大${MAX_ENTRY_PHOTOS}枚)は記録一覧の「写真」ボタンから管理できます。</p>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
             <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
@@ -1173,12 +1180,12 @@ async function openEntryPhotosModal(productId, entryId){
   if (!entry.photoKeys) entry.photoKeys = [];
 
   const photos = await Promise.all(entry.photoKeys.map(async id => ({ id, dataUrl: await getPhoto('photo:' + id) })));
-  const remaining = 10 - entry.photoKeys.length;
+  const remaining = MAX_ENTRY_PHOTOS - entry.photoKeys.length;
 
   document.getElementById('modal-root').innerHTML = `
     <div class="overlay" id="overlay-entry-photos">
       <div class="modal-card" style="width:480px;">
-        <h3>記録の写真(最大10枚)</h3>
+        <h3>記録の写真(最大${MAX_ENTRY_PHOTOS}枚)</h3>
         <div class="photo-grid" id="entry-photo-grid">
           ${photos.length === 0 ? `<p class="modal-msg">まだ写真がありません。</p>` : photos.map(p => `
             <div class="photo-thumb-wrap">
@@ -1191,7 +1198,7 @@ async function openEntryPhotosModal(productId, entryId){
                <label for="ep-add-photos">写真を追加(残り${remaining}枚まで)</label>
                <input id="ep-add-photos" type="file" accept="image/*" multiple />
              </div>`
-          : `<p class="modal-msg" style="margin-top:14px;">上限の10枚に達しています。</p>`}
+          : `<p class="modal-msg" style="margin-top:14px;">上限の${MAX_ENTRY_PHOTOS}枚に達しています。</p>`}
         <div class="modal-actions">
           <button class="btn btn-ghost" id="btn-close-entry-photos">閉じる</button>
         </div>
@@ -1219,7 +1226,7 @@ async function openEntryPhotosModal(productId, entryId){
   const addInput = document.getElementById('ep-add-photos');
   if (addInput){
     addInput.addEventListener('change', async () => {
-      const slots = 10 - entry.photoKeys.length;
+      const slots = MAX_ENTRY_PHOTOS - entry.photoKeys.length;
       const files = Array.from(addInput.files).slice(0, slots);
       for (const file of files){
         try{
@@ -1526,7 +1533,7 @@ function renderMain(){
           <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
         </div>
         <div class="field">
-          <label for="f-photo">この記録の写真(任意・最大10枚)</label>
+          <label for="f-photo">この記録の写真(任意・最大${MAX_ENTRY_PHOTOS}枚)</label>
           <input id="f-photo" type="file" accept="image/*" multiple />
         </div>
         <div class="field memo">
@@ -1617,6 +1624,10 @@ function renderMain(){
           <label for="f-entered-by">入力者名</label>
           <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
         </div>
+        <div class="field">
+          <label for="f-photo">この記録の写真(任意・最大${MAX_ENTRY_PHOTOS}枚)</label>
+          <input id="f-photo" type="file" accept="image/*" multiple />
+        </div>
         <div class="field memo">
           <label for="f-memo">メモ(任意)</label>
           <textarea id="f-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
@@ -1652,6 +1663,7 @@ function renderMain(){
               <td class="memo-cell">${e.memo ? escapeHtml(e.memo) : '—'}</td>
               <td><div class="row-actions">
                 <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
+                <button class="btn btn-ghost btn-sm" data-action="manage-entry-photos" data-product="${product.id}" data-id="${e.id}">${(e.photoKeys && e.photoKeys.length) ? `写真(${e.photoKeys.length})` : '写真を追加'}</button>
                 <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
               </div></td>
             </tr>`;
@@ -1751,6 +1763,10 @@ function renderMain(){
           <label for="f-entered-by">入力者名</label>
           <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
         </div>
+        <div class="field">
+          <label for="f-photo">この記録の写真(任意・最大${MAX_ENTRY_PHOTOS}枚)</label>
+          <input id="f-photo" type="file" accept="image/*" multiple />
+        </div>
         <div class="field memo">
           <label for="f-memo">メモ(任意)</label>
           <textarea id="f-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
@@ -1793,6 +1809,7 @@ function renderMain(){
               <td class="memo-cell">${e.memo ? escapeHtml(e.memo) : '—'}</td>
               <td><div class="row-actions">
                 <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
+                <button class="btn btn-ghost btn-sm" data-action="manage-entry-photos" data-product="${product.id}" data-id="${e.id}">${(e.photoKeys && e.photoKeys.length) ? `写真(${e.photoKeys.length})` : '写真を追加'}</button>
                 <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
               </div></td>
             </tr>`;
@@ -1837,7 +1854,7 @@ function renderMain(){
       if (!enteredBy){ showToast('入力者名を入力してください'); return; }
       const memo = document.getElementById('f-memo').value.trim();
       const date = document.getElementById('f-date').value || todayStr();
-      const files = Array.from(document.getElementById('f-photo').files).slice(0, 10);
+      const files = Array.from(document.getElementById('f-photo').files).slice(0, MAX_ENTRY_PHOTOS);
       const entry = { id: uid('entry'), date, price, enteredBy, memo, photoKeys: [], createdAt: Date.now() };
       for (const file of files){
         try{
@@ -1864,7 +1881,7 @@ function renderMain(){
     document.getElementById('f-weight').addEventListener('input', updateFDmPreview);
     document.getElementById('f-dm-percent').addEventListener('input', updateFDmPreview);
 
-    document.getElementById('price-form').addEventListener('submit', e => {
+    document.getElementById('price-form').addEventListener('submit', async e => {
       e.preventDefault();
       const weight = parseFloat(document.getElementById('f-weight').value);
       const dmPercent = parseFloat(document.getElementById('f-dm-percent').value);
@@ -1879,6 +1896,17 @@ function renderMain(){
       const enteredBy = document.getElementById('f-entered-by').value.trim();
       if (!enteredBy){ showToast('入力者名を入力してください'); return; }
       const memo = document.getElementById('f-memo').value.trim();
+      const entryPhotoKeys = [];
+      const entryPhotoFiles = Array.from(document.getElementById('f-photo').files).slice(0, MAX_ENTRY_PHOTOS);
+      for (const file of entryPhotoFiles){
+        try{
+          const dataUrl = await readAndCompressImage(file);
+          const photoId = uid('photo');
+          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+          if (res){ entryPhotoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+          else showToast('写真の保存に失敗しました');
+        }catch(err){ showToast('写真の保存に失敗しました'); }
+      }
       product.entries.push({
         id: uid('entry'),
         date: document.getElementById('f-date').value || todayStr(),
@@ -1888,6 +1916,7 @@ function renderMain(){
         freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
         enteredBy,
         memo,
+        photoKeys: entryPhotoKeys,
         createdAt: Date.now()
       });
       setLastEnteredBy(enteredBy);
@@ -1897,7 +1926,7 @@ function renderMain(){
       btn.addEventListener('click', () => { roughageChartMetric = btn.dataset.roughMetric; render(); });
     });
   } else {
-    document.getElementById('price-form').addEventListener('submit', e => {
+    document.getElementById('price-form').addEventListener('submit', async e => {
       e.preventDefault();
       const specQty = parseFloat(document.getElementById('f-spec-qty').value);
       const price = parseFloat(document.getElementById('f-price').value);
@@ -1917,6 +1946,7 @@ function renderMain(){
         usageQty, usageUnit: document.getElementById('f-usage-unit').value,
         enteredBy,
         memo,
+        photoKeys: [],
         createdAt: Date.now()
       };
       const extra = extraFieldsFor(product.category);
@@ -1936,6 +1966,16 @@ function renderMain(){
         newEntry.fiber = fiberRaw === '' ? null : parseFloat(fiberRaw);
         newEntry.ash = ashRaw === '' ? null : parseFloat(ashRaw);
         newEntry.animalRatio = animalRatioRaw === '' ? null : parseFloat(animalRatioRaw);
+      }
+      const entryPhotoFiles = Array.from(document.getElementById('f-photo').files).slice(0, MAX_ENTRY_PHOTOS);
+      for (const file of entryPhotoFiles){
+        try{
+          const dataUrl = await readAndCompressImage(file);
+          const photoId = uid('photo');
+          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+          if (res){ newEntry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+          else showToast('写真の保存に失敗しました');
+        }catch(err){ showToast('写真の保存に失敗しました'); }
       }
       product.entries.push(newEntry);
       setLastEnteredBy(enteredBy);
