@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>価格台帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6EC;
+    --paper-deep:#F1E9D6;
+    --ink:#23262B;
+    --ink-soft:#6E6655;
+    --indigo:#2B3A5C;
+    --indigo-soft:#41538A;
+    --vermillion:#BD3A2E;
+    --moss:#4C7A56;
+    --line:#DDD4BD;
+    --line-strong:#C7BB9D;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans JP', sans-serif;-webkit-font-smoothing:antialiased;touch-action:manipulation;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+  .display{font-family:'Shippori Mincho', serif;}
+
+  /* ---------- header ---------- */
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;border-bottom:1px solid var(--line-strong);background:var(--paper);position:sticky;top:0;z-index:5;flex-wrap:wrap;gap:10px;}
+  .brand{display:flex;gap:12px;align-items:center;}
+  .hanko{width:42px;height:42px;background:var(--vermillion);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-weight:700;font-size:19px;border-radius:6px;transform:rotate(-4deg);flex-shrink:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.45), 0 2px 4px rgba(0,0,0,.15);}
+  .brand h1{font-family:'Shippori Mincho',serif;font-size:21px;margin:0;letter-spacing:.04em;}
+  .brand p{margin:2px 0 0;font-size:11px;color:var(--ink-soft);letter-spacing:.02em;}
+  .btn{border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;letter-spacing:.02em;transition:background .15s,opacity .15s;padding:9px 16px;}
+  .btn:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:2px;}
+  .btn-primary{background:var(--indigo);color:var(--paper);}
+  .btn-primary:hover{background:var(--indigo-soft);}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-strong);}
+  .btn-ghost:hover{background:var(--paper-deep);}
+  .btn-danger{background:var(--vermillion);color:var(--paper);}
+  .btn-danger:hover{opacity:.88;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+
+  /* ---------- tabs ---------- */
+  .tabbar{display:flex;max-width:1100px;margin:0 auto;padding:14px 28px 0;border-bottom:1px solid var(--line);}
+  .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:8px 4px;margin-right:22px;font-size:13.5px;color:var(--ink-soft);cursor:pointer;font-weight:500;letter-spacing:.02em;}
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--indigo);}
+  .tab-btn:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:2px;}
+
+  /* ---------- layout ---------- */
+  .layout{display:flex;max-width:1100px;margin:0 auto;gap:24px;padding:24px 28px 56px;align-items:flex-start;}
+  .sidebar{width:280px;flex-shrink:0;position:sticky;top:120px;max-height:calc(100vh - 144px);overflow-y:auto;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--paper);}
+  .sidebar-filter{padding:10px 12px;border-bottom:1px solid var(--line);}
+  .sidebar-filter select{width:100%;border:1px solid var(--line-strong);border-radius:var(--radius);padding:7px 8px;font-size:16px;background:#fff;color:var(--ink);}
+  .cat-head{padding:9px 14px 5px;font-size:11px;color:var(--ink-soft);letter-spacing:.04em;background:var(--paper-deep);border-bottom:1px solid var(--line);}
+  .product-item{display:flex;gap:10px;align-items:center;cursor:pointer;padding:11px 14px;border-bottom:1px solid var(--line);border-left:3px solid transparent;transition:background .12s,border-color .12s;}
+  .product-item:hover{background:var(--paper-deep);}
+  .product-item.active{border-left-color:var(--indigo);background:var(--paper-deep);}
+  .product-item .info{flex:1;min-width:0;}
+  .product-item .name{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .product-item .price-line{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .sidebar-empty{padding:24px 16px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;}
+  .thumb-sm{width:34px;height:34px;border-radius:4px;object-fit:cover;flex-shrink:0;background:var(--paper-deep);border:1px solid var(--line);}
+
+  /* ---------- main ---------- */
+  .main{flex:1;min-width:0;}
+  .panel{border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--paper);padding:22px 24px;}
+  .empty-state{text-align:center;padding:64px 24px;color:var(--ink-soft);}
+  .empty-state h2{font-family:'Shippori Mincho',serif;color:var(--ink);font-size:18px;margin:0 0 8px;}
+  .empty-state p{font-size:13px;margin:0 0 20px;}
+
+  .product-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line-strong);padding-bottom:16px;margin-bottom:16px;gap:16px;flex-wrap:wrap;}
+  .product-head-main{display:flex;gap:14px;align-items:flex-start;}
+  .product-head h2{font-family:'Shippori Mincho',serif;font-size:19px;margin:0 0 6px;}
+  .tag{display:inline-block;font-size:11px;color:var(--ink-soft);background:var(--paper-deep);border:1px solid var(--line-strong);border-radius:3px;padding:2px 8px;}
+  .thumb-lg{width:72px;height:72px;border-radius:6px;object-fit:cover;border:1px solid var(--line-strong);background:var(--paper-deep);flex-shrink:0;cursor:pointer;}
+  .thumb-placeholder{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink-soft);text-align:center;line-height:1.3;}
+
+  .stat-row{display:flex;gap:12px;margin:0 0 20px;flex-wrap:wrap;}
+  .stat-card{flex:1;min-width:150px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper-deep);padding:12px 14px;}
+  .stat-card .label{font-size:11px;color:var(--ink-soft);letter-spacing:.03em;margin-bottom:6px;}
+  .stat-card .value{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;}
+  .stat-card .delta{font-size:11.5px;margin-top:4px;font-weight:500;}
+  .delta-up{color:var(--vermillion);} .delta-down{color:var(--moss);} .delta-flat{color:var(--ink-soft);}
+  .delta-up::before{content:"▲ ";} .delta-down::before{content:"▼ ";} .delta-flat::before{content:"ー ";}
+  .no-record{font-size:13px;color:var(--ink-soft);}
+
+  .chart-toggle{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .chart-toggle button{font-size:12px;padding:6px 12px;border:1px solid var(--line-strong);background:#fff;border-radius:var(--radius);cursor:pointer;color:var(--ink-soft);}
+  .chart-toggle button.active{background:var(--indigo);color:var(--paper);border-color:var(--indigo);}
+  .chart-wrap{border:1px solid var(--line);border-radius:var(--radius);background:#fff;padding:14px;margin-bottom:22px;}
+  .chart-wrap svg{width:100%;height:auto;display:block;}
+  .chart-empty{font-size:12.5px;color:var(--ink-soft);text-align:center;padding:36px 0;}
+
+  .entry-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--paper-deep);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:22px;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:11px;color:var(--ink-soft);letter-spacing:.03em;}
+  .field input,.field select{border:1px solid var(--line-strong);border-radius:var(--radius);padding:8px 9px;font-size:16px;font-family:'Noto Sans JP',sans-serif;background:#fff;min-width:0;}
+  .field input[type="file"]{padding:6px 8px;font-size:14px;}
+  .field input:focus-visible,.field select:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:1px;}
+  .field.date input{width:124px;font-family:'JetBrains Mono',monospace;}
+  .field.maker input{width:130px;}
+  .field.qty input{width:104px;font-family:'JetBrains Mono',monospace;}
+  .field-duo{display:flex;flex-direction:column;gap:4px;}
+  .field-duo label{font-size:11px;color:var(--ink-soft);letter-spacing:.03em;}
+  .field-duo .row{display:flex;gap:5px;}
+  .field-duo input{width:74px;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid var(--line-strong);border-radius:var(--radius);padding:8px 9px;background:#fff;}
+  .field-duo select{width:70px;padding:8px 4px;font-size:16px;border:1px solid var(--line-strong);border-radius:var(--radius);background:#fff;}
+  .field.price input{width:96px;font-family:'JetBrains Mono',monospace;}
+
+  .entries-title{font-size:12px;color:var(--ink-soft);letter-spacing:.04em;margin:0 0 8px;}
+  .table-scroll{overflow-x:auto;}
+  table.ledger{width:100%;border-collapse:collapse;min-width:480px;font-size:12.5px;}
+  .ledger thead th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:500;letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--line-strong);white-space:nowrap;}
+  .ledger tbody th{text-align:left;font-size:12px;font-weight:500;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--ink-soft);}
+  .ledger tbody td{padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  .ledger td.num,.ledger th.num{text-align:right;font-family:'JetBrains Mono',monospace;}
+  .row-actions{display:flex;gap:2px;}
+  .edit-btn{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:11.5px;padding:3px 7px;border-radius:3px;transition:color .12s,background .12s;}
+  .edit-btn:hover{color:var(--indigo);background:rgba(43,58,92,.08);}
+  .del-btn{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:3px;transition:color .12s,background .12s;}
+  .del-btn:hover{color:var(--vermillion);background:rgba(189,58,46,.08);}
+  .product-actions{display:flex;gap:8px;flex-shrink:0;}
+
+  /* ---------- compare ---------- */
+  .compare-picker{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+  .compare-picker .field{flex:1;min-width:160px;}
+  .compare-picker select{width:100%;}
+  .compare-legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 10px;font-size:12px;color:var(--ink-soft);}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
+
+  /* ---------- entry photo gallery ---------- */
+  .photo-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .photo-thumb-wrap{position:relative;width:64px;height:64px;}
+  .photo-thumb{width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--line-strong);display:block;background:var(--paper-deep);}
+  .photo-thumb-empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-soft);text-align:center;}
+  .photo-thumb-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--vermillion);color:var(--paper);border:none;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+  .photo-thumb-del:hover{opacity:.85;}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(20,18,14,.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;overflow-y:auto;}
+  .modal-card{background:var(--paper);border-radius:6px;width:440px;max-width:100%;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,.22);margin:auto;}
+  .modal-card h3{font-family:'Shippori Mincho',serif;margin:0 0 16px;font-size:17px;}
+  .modal-card .field,.modal-card .field-duo{margin-bottom:12px;}
+  .modal-grid{display:flex;flex-wrap:wrap;gap:12px;}
+  .modal-grid .field,.modal-grid .field-duo{flex:1;min-width:120px;}
+  .modal-card .field input,.modal-card .field select{width:100%;}
+  .modal-card .field-duo input{width:100%;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .modal-msg{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:0;}
+
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--vermillion);color:var(--paper);font-size:12.5px;padding:10px 18px;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .loading-state{padding:64px 0;text-align:center;color:var(--ink-soft);font-size:13px;}
+
+  @media (max-width:760px){
+    .topbar{padding:14px 16px;}
+    .tabbar{padding:12px 16px 0;}
+    .layout{flex-direction:column;padding:16px;}
+    .main{width:100%;}
+    .sidebar{width:100%;position:static;max-height:220px;}
+    .stat-card .value{font-size:18px;}
+  }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="hanko">価</div>
+      <div>
+        <h1>価格台帳</h1>
+        <p>飼料添加剤・畜産資材の価格を記録し、㎏単価と一頭あたりコストを追う</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-open-add-product">＋ 製品を追加</button>
+  </header>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="detail">製品ごとの記録</button>
+    <button class="tab-btn" data-tab="compare">製品比較</button>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main" id="main"></main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const STORAGE_KEY = 'feed-price-ledger-v1';
+const FACILITY_CATEGORY = '施設・設備';
+const ROUGHAGE_CATEGORY = '粗飼料';
+const COLOSTRUM_CATEGORY = '初乳製剤';
+const MILK_REPLACER_CATEGORY = '代用乳';
+const DEFAULT_CATEGORIES = ['脂肪酸カルシウム','添加剤','フットバス薬剤','サイレージ調整剤','バイパス蛋白','生菌剤', ROUGHAGE_CATEGORY, COLOSTRUM_CATEGORY, MILK_REPLACER_CATEGORY, FACILITY_CATEGORY];
+const SPEC_UNITS = ['kg','g','L','mL'];
+const USAGE_UNITS = ['g','kg','mL','L'];
+const ROUGHAGE_FORMS = ['コンビラップ','バラ'];
+const COMPARE_COLORS = ['var(--indigo)', 'var(--vermillion)', 'var(--moss)'];
+
+function categoryType(category){
+  if (category === FACILITY_CATEGORY) return 'facility';
+  if (category === ROUGHAGE_CATEGORY) return 'roughage';
+  return 'standard';
+}
+function extraFieldsFor(category){
+  if (category === COLOSTRUM_CATEGORY) return 'colostrum';
+  if (category === MILK_REPLACER_CATEGORY) return 'milkreplacer';
+  return null;
+}
+
+/* ---------------- cloud storage (Firebase Firestore) ----------------
+   GitHub Pages 等の通常のサイトでは window.storage が存在しないため、
+   Firestore を使った同等の保存層をここで用意する。
+   Claude のアーティファクト環境など、すでに window.storage が
+   用意されている場合はそちらを優先してそのまま使う。 */
+if (!window.storage){
+  const firebaseConfig = {
+    apiKey: "AIzaSyAsm8nf3RH5MxsPZJxoVLtfZH4cB6JNj8o",
+    authDomain: "nvapp-abace.firebaseapp.com",
+    projectId: "nvapp-abace",
+    storageBucket: "nvapp-abace.firebasestorage.app",
+    messagingSenderId: "332277746029",
+    appId: "1:332277746029:web:5b1b6430170b81a3fa7264"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const FIRESTORE_COLLECTION = 'app-data';
+
+  window.storage = {
+    get: async (key, shared) => {
+      const doc = await db.collection(FIRESTORE_COLLECTION).doc(key).get();
+      if (!doc.exists) throw new Error('not found: ' + key);
+      return { key, value: doc.data().value, shared: !!shared };
+    },
+    set: async (key, value, shared) => {
+      await db.collection(FIRESTORE_COLLECTION).doc(key).set({
+        value,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return { key, value, shared: !!shared };
+    },
+    delete: async (key, shared) => {
+      await db.collection(FIRESTORE_COLLECTION).doc(key).delete();
+      return { key, deleted: true, shared: !!shared };
+    },
+    list: async (prefix, shared) => {
+      const snap = await db.collection(FIRESTORE_COLLECTION).get();
+      const keys = snap.docs.map(d => d.id).filter(k => !prefix || k.startsWith(prefix));
+      return { keys, prefix, shared: !!shared };
+    }
+  };
+}
+
+let appData = { categories: [...DEFAULT_CATEGORIES], products: [], herdSize: null };
+let selectedProductId = null;
+let categoryFilter = '__all__';
+let chartMetric = 'perhead';
+let roughageChartMetric = 'drykgunit';
+let loading = true;
+let photoCache = {}; // storageKey -> dataUrl | null
+let activeTab = 'detail'; // 'detail' | 'compare'
+let compareSelection = [null, null, null];
+let compareMetric = 'perhead';
+
+/* ---------------- utils ---------------- */
+function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function todayStr(){
+  const d = new Date(); const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function dispDate(s){ return s ? s.replace(/-/g,'/') : ''; }
+function shortDate(s){ if(!s) return ''; const p = s.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : s; }
+function formatDateTime(ms){
+  if (!ms) return '—';
+  const d = new Date(ms);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function getLastEnteredBy(){
+  try{ return localStorage.getItem('lastEnteredBy') || ''; }catch(e){ return ''; }
+}
+function setLastEnteredBy(name){
+  try{ localStorage.setItem('lastEnteredBy', name); }catch(e){ /* ignore */ }
+}
+function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function yenCalc(n){
+  const r = Math.round(n*10)/10;
+  const dec = Number.isInteger(r) ? 0 : 1;
+  return '¥' + r.toLocaleString('ja-JP', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function getProduct(id){ return appData.products.find(p => p.id === id); }
+function productPhotoKey(productId){ return 'productphoto:' + productId; }
+
+function sortedEntriesDesc(p){
+  return [...p.entries].sort((a,b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (b.createdAt||0) - (a.createdAt||0);
+  });
+}
+function sortedEntriesAsc(p){ return [...sortedEntriesDesc(p)].reverse(); }
+
+/* ---------------- photo helpers ---------------- */
+function readAndCompressImage(file, maxDim=900, quality=0.75){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim){
+          if (width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function getPhoto(key){
+  if (photoCache[key] !== undefined) return photoCache[key];
+  try{
+    const res = await window.storage.get(key, false);
+    photoCache[key] = res ? res.value : null;
+  }catch(e){
+    photoCache[key] = null;
+  }
+  return photoCache[key];
+}
+function loadThumbnailsAfterRender(){
+  document.querySelectorAll('img[data-photo-key]').forEach(async img => {
+    const key = img.dataset.photoKey;
+    const dataUrl = await getPhoto(key);
+    if (dataUrl) img.src = dataUrl;
+  });
+}
+async function deleteEntryPhotoIfAny(entry){
+  if (entry && entry.photoKeys && entry.photoKeys.length){
+    for (const id of entry.photoKeys){
+      const key = 'photo:' + id;
+      try{ await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+      delete photoCache[key];
+    }
+  }
+}
+async function deleteProductPhotoIfAny(product){
+  if (product && product.hasPhoto){
+    const key = productPhotoKey(product.id);
+    try{ await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+    delete photoCache[key];
+  }
+}
+
+/* ---------------- calculations: standard category ---------------- */
+function toBase(qty, unit){
+  if (unit==='kg') return {value: qty, dim:'weight'};
+  if (unit==='g')  return {value: qty/1000, dim:'weight'};
+  if (unit==='L')  return {value: qty, dim:'volume'};
+  if (unit==='mL') return {value: qty/1000, dim:'volume'};
+  return {value:null, dim:null};
+}
+function calcUnitPrice(e){
+  const spec = toBase(e.specQty, e.specUnit);
+  if (!spec.value || spec.value <= 0) return null;
+  return { value: e.price / spec.value, dim: spec.dim };
+}
+function calcPerHead(e){
+  const up = calcUnitPrice(e);
+  if (!up) return null;
+  const usage = toBase(e.usageQty, e.usageUnit);
+  if (usage.dim !== up.dim || usage.value === null) return null;
+  return up.value * usage.value;
+}
+function unitPriceLabel(dim){ return dim === 'volume' ? 'L単価' : '㎏単価'; }
+
+function metricValue(e, metric){
+  if (metric === 'price') return e.price;
+  if (metric === 'kgunit'){ const r = calcUnitPrice(e); return r ? r.value : null; }
+  if (metric === 'perhead') return calcPerHead(e);
+  return null;
+}
+function metricDim(product){
+  for (const e of product.entries){
+    const r = calcUnitPrice(e);
+    if (r) return r.dim;
+  }
+  return 'weight';
+}
+
+function herdDailyCost(perHead){
+  if (perHead === null || perHead === undefined || isNaN(perHead)) return null;
+  if (appData.herdSize === null || appData.herdSize === undefined || isNaN(appData.herdSize) || appData.herdSize <= 0) return null;
+  return perHead * appData.herdSize;
+}
+function herdMonthlyCost(perHead){
+  const daily = herdDailyCost(perHead);
+  return daily === null ? null : daily * 30;
+}
+
+/* ---------------- calculations: roughage category ---------------- */
+function roughageBasisPrice(e){
+  if (e.freightPrice !== null && e.freightPrice !== undefined && !isNaN(e.freightPrice)) return e.freightPrice;
+  return e.price;
+}
+function roughageDryWeight(e){
+  if (!e.weight || e.weight <= 0) return null;
+  if (e.dmPercent === null || e.dmPercent === undefined || isNaN(e.dmPercent) || e.dmPercent < 0) return null;
+  return e.weight * e.dmPercent / 100;
+}
+function roughageUnitPrice(e){
+  const basis = roughageBasisPrice(e);
+  if (basis === null || basis === undefined || isNaN(basis)) return null;
+  if (!e.weight || e.weight <= 0) return null;
+  return basis / e.weight;
+}
+function roughageDryUnitPrice(e){
+  const basis = roughageBasisPrice(e);
+  if (basis === null || basis === undefined || isNaN(basis)) return null;
+  const dw = roughageDryWeight(e);
+  if (!dw || dw <= 0) return null;
+  return basis / dw;
+}
+function roughageMetricValue(e, metric){
+  if (metric === 'price') return roughageBasisPrice(e);
+  if (metric === 'kgunit') return roughageUnitPrice(e);
+  if (metric === 'drykgunit') return roughageDryUnitPrice(e);
+  return null;
+}
+
+function compareMetricValue(e, metric){
+  if (metric === 'herdday' || metric === 'herdmonth'){
+    const ph = calcPerHead(e);
+    if (ph === null) return null;
+    return metric === 'herdday' ? herdDailyCost(ph) : herdMonthlyCost(ph);
+  }
+  if (metric === 'roughkgunit') return roughageUnitPrice(e);
+  if (metric === 'roughdrykgunit') return roughageDryUnitPrice(e);
+  return metricValue(e, metric);
+}
+
+/* ---------------- storage ---------------- */
+async function loadData(){
+  loading = true; render();
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if (res && res.value){
+      const parsed = JSON.parse(res.value);
+      appData = {
+        categories: parsed.categories && parsed.categories.length ? parsed.categories : [...DEFAULT_CATEGORIES],
+        products: parsed.products || [],
+        herdSize: (typeof parsed.herdSize === 'number') ? parsed.herdSize : null
+      };
+    }
+  }catch(e){
+    appData = { categories: [...DEFAULT_CATEGORIES], products: [], herdSize: null };
+  }
+  if (!appData.categories.includes(FACILITY_CATEGORY)) appData.categories.push(FACILITY_CATEGORY);
+  if (!appData.categories.includes(ROUGHAGE_CATEGORY)) appData.categories.push(ROUGHAGE_CATEGORY);
+  if (!appData.categories.includes(COLOSTRUM_CATEGORY)) appData.categories.push(COLOSTRUM_CATEGORY);
+  if (!appData.categories.includes(MILK_REPLACER_CATEGORY)) appData.categories.push(MILK_REPLACER_CATEGORY);
+  appData.products.forEach(p => {
+    p.entries.forEach(e => {
+      if (!e.photoKeys){
+        e.photoKeys = e.photoKey ? [e.photoKey] : [];
+      }
+    });
+  });
+  if (appData.products.length > 0) selectedProductId = appData.products[0].id;
+  loading = false;
+  render();
+}
+async function saveData(){
+  try{
+    const res = await window.storage.set(STORAGE_KEY, JSON.stringify(appData), false);
+    if (!res) showToast('保存に失敗しました。もう一度お試しください');
+  }catch(e){
+    showToast('保存に失敗しました。もう一度お試しください');
+  }
+}
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ---------------- shared option builders ---------------- */
+function categoryOptionsHtml(selected){
+  return appData.categories.map(c =>
+    `<option value="${escapeHtml(c)}" ${c===selected?'selected':''}>${escapeHtml(c)}</option>`
+  ).join('') + `<option value="__new__">＋ 新規作成…</option>`;
+}
+function unitOptionsHtml(units, selected){
+  return units.map(u => `<option value="${u}" ${u===selected?'selected':''}>${u}</option>`).join('');
+}
+function roughageFormOptionsHtml(selected){
+  return ROUGHAGE_FORMS.map(f => `<option value="${f}" ${f===selected?'selected':''}>${f}</option>`).join('');
+}
+
+/* ---------------- modal: add product ---------------- */
+function openAddProductModal(){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="overlay" id="overlay-add-product">
+      <div class="modal-card">
+        <h3>製品を追加</h3>
+        <div class="modal-grid">
+          <div class="field">
+            <label for="m-category">製品の種類</label>
+            <select id="m-category">${categoryOptionsHtml(appData.categories[0])}</select>
+          </div>
+          <div class="field" id="m-new-category-wrap" style="display:none;">
+            <label for="m-new-category">新しい種類名</label>
+            <input id="m-new-category" type="text" placeholder="例: ビタミン剤" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="m-name">製品名</label>
+          <input id="m-name" type="text" placeholder="例: ○○カルシウムA" autofocus />
+        </div>
+        <div class="field">
+          <label for="m-product-photo">製品の写真(任意・パンフレットなど)</label>
+          <input id="m-product-photo" type="file" accept="image/*" />
+        </div>
+        <div class="modal-grid">
+          <div class="field date">
+            <label for="m-date">日付</label>
+            <input id="m-date" type="date" value="${todayStr()}" />
+          </div>
+          <div class="field price">
+            <label for="m-price">価格(円)</label>
+            <input id="m-price" type="number" min="0" step="1" placeholder="0" />
+          </div>
+        </div>
+        <div class="field maker">
+          <label for="m-entered-by">入力者名</label>
+          <input id="m-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" />
+        </div>
+
+        <div id="m-standard-fields">
+          <div class="field maker">
+            <label for="m-maker">メーカー名(任意)</label>
+            <input id="m-maker" type="text" placeholder="例: ○○商会" />
+          </div>
+          <div class="modal-grid">
+            <div class="field-duo">
+              <label>規格</label>
+              <div class="row">
+                <input id="m-spec-qty" type="number" min="0" step="0.1" placeholder="20" />
+                <select id="m-spec-unit">${unitOptionsHtml(SPEC_UNITS, 'kg')}</select>
+              </div>
+            </div>
+          </div>
+          <div class="field-duo">
+            <label>使用量(日/頭)</label>
+            <div class="row">
+              <input id="m-usage-qty" type="number" min="0" step="0.1" placeholder="50" />
+              <select id="m-usage-unit">${unitOptionsHtml(USAGE_UNITS, 'g')}</select>
+            </div>
+          </div>
+          <div id="m-colostrum-fields" style="display:none;">
+            <div class="field qty">
+              <label for="m-igg">IgG含量(g/L・任意)</label>
+              <input id="m-igg" type="number" min="0" step="0.1" placeholder="50" />
+            </div>
+          </div>
+          <div id="m-milkreplacer-fields" style="display:none;">
+            <div class="modal-grid">
+              <div class="field qty">
+                <label for="m-cp">CP(%・任意)</label>
+                <input id="m-cp" type="number" min="0" step="0.1" placeholder="24" />
+              </div>
+              <div class="field qty">
+                <label for="m-fat">FAT(%・任意)</label>
+                <input id="m-fat" type="number" min="0" step="0.1" placeholder="18" />
+              </div>
+              <div class="field qty">
+                <label for="m-tdn">TDN(%・任意)</label>
+                <input id="m-tdn" type="number" min="0" step="0.1" placeholder="90" />
+              </div>
+            </div>
+            <div class="modal-grid">
+              <div class="field qty">
+                <label for="m-fiber">Fiber(%・任意)</label>
+                <input id="m-fiber" type="number" min="0" step="0.1" placeholder="0.5" />
+              </div>
+              <div class="field qty">
+                <label for="m-ash">Ash(%・任意)</label>
+                <input id="m-ash" type="number" min="0" step="0.1" placeholder="7" />
+              </div>
+              <div class="field qty">
+                <label for="m-animal-ratio">動物性飼料の割合(%・任意)</label>
+                <input id="m-animal-ratio" type="number" min="0" max="100" step="0.1" placeholder="60" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="m-photo-field" class="field" style="display:none;">
+          <label for="m-photo">この記録の写真(任意・最大10枚)</label>
+          <input id="m-photo" type="file" accept="image/*" multiple />
+        </div>
+
+        <div id="m-roughage-fields" style="display:none;">
+          <div class="modal-grid">
+            <div class="field">
+              <label for="m-form">形態</label>
+              <select id="m-form">${roughageFormOptionsHtml(ROUGHAGE_FORMS[0])}</select>
+            </div>
+            <div class="field maker">
+              <label for="m-maker-r">メーカー名(任意)</label>
+              <input id="m-maker-r" type="text" placeholder="例: ○○農協" />
+            </div>
+          </div>
+          <div class="modal-grid">
+            <div class="field qty">
+              <label for="m-weight">重量(kg)</label>
+              <input id="m-weight" type="number" min="0" step="0.1" placeholder="500" />
+            </div>
+            <div class="field qty">
+              <label for="m-dm-percent">乾物%(％)</label>
+              <input id="m-dm-percent" type="number" min="0" max="100" step="0.1" placeholder="35" />
+            </div>
+          </div>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 12px;">乾物摂取量: <span id="m-dm-preview" class="mono">—</span></p>
+          <div class="field">
+            <label for="m-freight-price">運賃込み価格(円・任意)</label>
+            <input id="m-freight-price" type="number" min="0" step="1" placeholder="未入力なら価格を使用" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-cancel-add">キャンセル</button>
+          <button class="btn btn-primary" id="btn-confirm-add">追加する</button>
+        </div>
+      </div>
+    </div>`;
+
+  const catSelect = document.getElementById('m-category');
+  const newCatWrap = document.getElementById('m-new-category-wrap');
+  const standardFields = document.getElementById('m-standard-fields');
+  const photoField = document.getElementById('m-photo-field');
+  const roughageFields = document.getElementById('m-roughage-fields');
+  const colostrumFields = document.getElementById('m-colostrum-fields');
+  const milkReplacerFields = document.getElementById('m-milkreplacer-fields');
+
+  function syncCategoryFields(){
+    newCatWrap.style.display = catSelect.value === '__new__' ? 'flex' : 'none';
+    const type = categoryType(catSelect.value);
+    standardFields.style.display = type === 'standard' ? 'block' : 'none';
+    photoField.style.display = type === 'facility' ? 'flex' : 'none';
+    roughageFields.style.display = type === 'roughage' ? 'block' : 'none';
+    const extra = extraFieldsFor(catSelect.value);
+    colostrumFields.style.display = extra === 'colostrum' ? 'block' : 'none';
+    milkReplacerFields.style.display = extra === 'milkreplacer' ? 'block' : 'none';
+  }
+  catSelect.addEventListener('change', syncCategoryFields);
+  syncCategoryFields();
+
+  function updateDmPreview(){
+    const w = parseFloat(document.getElementById('m-weight').value);
+    const dm = parseFloat(document.getElementById('m-dm-percent').value);
+    const preview = document.getElementById('m-dm-preview');
+    preview.textContent = (!isNaN(w) && w > 0 && !isNaN(dm) && dm >= 0)
+      ? (Math.round(w * dm / 100 * 10) / 10).toLocaleString('ja-JP') + ' kg'
+      : '—';
+  }
+  document.getElementById('m-weight').addEventListener('input', updateDmPreview);
+  document.getElementById('m-dm-percent').addEventListener('input', updateDmPreview);
+
+  document.getElementById('m-name').focus();
+  document.getElementById('btn-cancel-add').onclick = closeModal;
+  document.getElementById('overlay-add-product').addEventListener('click', e => {
+    if (e.target.id === 'overlay-add-product') closeModal();
+  });
+
+  async function submit(){
+    const name = document.getElementById('m-name').value.trim();
+    if (!name){ document.getElementById('m-name').focus(); return; }
+    let category = catSelect.value;
+    if (category === '__new__'){
+      category = document.getElementById('m-new-category').value.trim();
+      if (!category){ document.getElementById('m-new-category').focus(); return; }
+      if (!appData.categories.includes(category)) appData.categories.push(category);
+    }
+    const type = categoryType(category);
+    const date = document.getElementById('m-date').value || todayStr();
+    const price = parseFloat(document.getElementById('m-price').value);
+    if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
+    const enteredBy = document.getElementById('m-entered-by').value.trim();
+    if (!enteredBy){ showToast('入力者名を入力してください'); document.getElementById('m-entered-by').focus(); return; }
+
+    let entry;
+    if (type === 'facility'){
+      entry = { id: uid('entry'), date, price, enteredBy, photoKeys: [], createdAt: Date.now() };
+      const files = Array.from(document.getElementById('m-photo').files).slice(0, 10);
+      for (const file of files){
+        try{
+          const dataUrl = await readAndCompressImage(file);
+          const photoId = uid('photo');
+          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+          if (res){ entry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+          else showToast('記録の写真の保存に失敗しました');
+        }catch(err){ showToast('記録の写真の保存に失敗しました'); }
+      }
+    } else if (type === 'roughage'){
+      const weight = parseFloat(document.getElementById('m-weight').value);
+      const dmPercent = parseFloat(document.getElementById('m-dm-percent').value);
+      const freightRaw = document.getElementById('m-freight-price').value;
+      if (isNaN(weight) || weight <= 0 || isNaN(dmPercent) || dmPercent < 0 || dmPercent > 100){
+        showToast('重量・乾物%を正しく入力してください'); return;
+      }
+      if (freightRaw !== '' && (isNaN(parseFloat(freightRaw)) || parseFloat(freightRaw) < 0)){
+        showToast('運賃込み価格を正しく入力してください'); return;
+      }
+      entry = {
+        id: uid('entry'), date,
+        form: document.getElementById('m-form').value,
+        manufacturer: document.getElementById('m-maker-r').value.trim(),
+        weight, dmPercent, price,
+        freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
+        enteredBy,
+        createdAt: Date.now()
+      };
+    } else {
+      const specQty = parseFloat(document.getElementById('m-spec-qty').value);
+      const usageQty = parseFloat(document.getElementById('m-usage-qty').value);
+      if (isNaN(specQty) || specQty <= 0 || isNaN(usageQty) || usageQty < 0){
+        showToast('規格・使用量を正しく入力してください');
+        return;
+      }
+      entry = {
+        id: uid('entry'), date,
+        manufacturer: document.getElementById('m-maker').value.trim(),
+        specQty, specUnit: document.getElementById('m-spec-unit').value,
+        price,
+        usageQty, usageUnit: document.getElementById('m-usage-unit').value,
+        enteredBy,
+        createdAt: Date.now()
+      };
+      const extra = extraFieldsFor(category);
+      if (extra === 'colostrum'){
+        const iggRaw = document.getElementById('m-igg').value;
+        entry.igg = iggRaw === '' ? null : parseFloat(iggRaw);
+      } else if (extra === 'milkreplacer'){
+        const cpRaw = document.getElementById('m-cp').value;
+        const fatRaw = document.getElementById('m-fat').value;
+        const tdnRaw = document.getElementById('m-tdn').value;
+        const fiberRaw = document.getElementById('m-fiber').value;
+        const ashRaw = document.getElementById('m-ash').value;
+        const animalRatioRaw = document.getElementById('m-animal-ratio').value;
+        entry.cp = cpRaw === '' ? null : parseFloat(cpRaw);
+        entry.fat = fatRaw === '' ? null : parseFloat(fatRaw);
+        entry.tdn = tdnRaw === '' ? null : parseFloat(tdnRaw);
+        entry.fiber = fiberRaw === '' ? null : parseFloat(fiberRaw);
+        entry.ash = ashRaw === '' ? null : parseFloat(ashRaw);
+        entry.animalRatio = animalRatioRaw === '' ? null : parseFloat(animalRatioRaw);
+      }
+    }
+    const product = { id: uid('prod'), category, name, createdAt: Date.now(), hasPhoto: false, entries: [entry] };
+
+    const productPhotoFile = document.getElementById('m-product-photo').files[0];
+    if (productPhotoFile){
+      try{
+        const dataUrl = await readAndCompressImage(productPhotoFile);
+        const key = productPhotoKey(product.id);
+        const res = await window.storage.set(key, dataUrl, false);
+        if (res){ product.hasPhoto = true; photoCache[key] = dataUrl; }
+        else showToast('製品の写真の保存に失敗しました');
+      }catch(err){ showToast('製品の写真の保存に失敗しました'); }
+    }
+
+    appData.products.push(product);
+    selectedProductId = product.id;
+    setLastEnteredBy(enteredBy);
+    saveData(); render(); closeModal();
+  }
+  document.getElementById('btn-confirm-add').onclick = submit;
+}
+
+/* ---------------- modal: edit product ---------------- */
+function openEditProductModal(productId){
+  const product = getProduct(productId);
+  if (!product) return;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="overlay" id="overlay-edit-product">
+      <div class="modal-card">
+        <h3>製品を編集</h3>
+        <div class="field">
+          <label for="ep-category">製品の種類</label>
+          <select id="ep-category">${categoryOptionsHtml(product.category)}</select>
+        </div>
+        <div class="field" id="ep-new-category-wrap" style="display:none;">
+          <label for="ep-new-category">新しい種類名</label>
+          <input id="ep-new-category" type="text" placeholder="例: ビタミン剤" />
+        </div>
+        <div class="field">
+          <label for="ep-name">製品名</label>
+          <input id="ep-name" type="text" value="${escapeHtml(product.name)}" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-cancel-edit-product">キャンセル</button>
+          <button class="btn btn-primary" id="btn-save-edit-product">保存</button>
+        </div>
+      </div>
+    </div>`;
+
+  const catSelect = document.getElementById('ep-category');
+  const newCatWrap = document.getElementById('ep-new-category-wrap');
+  catSelect.addEventListener('change', () => {
+    newCatWrap.style.display = catSelect.value === '__new__' ? 'flex' : 'none';
+  });
+  document.getElementById('ep-name').focus();
+  document.getElementById('btn-cancel-edit-product').onclick = closeModal;
+  document.getElementById('overlay-edit-product').addEventListener('click', e => {
+    if (e.target.id === 'overlay-edit-product') closeModal();
+  });
+  document.getElementById('btn-save-edit-product').onclick = () => {
+    const name = document.getElementById('ep-name').value.trim();
+    if (!name){ showToast('製品名を入力してください'); return; }
+    let category = catSelect.value;
+    if (category === '__new__'){
+      category = document.getElementById('ep-new-category').value.trim();
+      if (!category){ showToast('新しい種類名を入力してください'); return; }
+      if (!appData.categories.includes(category)) appData.categories.push(category);
+    }
+    product.name = name;
+    product.category = category;
+    saveData(); render(); closeModal();
+  };
+}
+
+/* ---------------- modal: edit entry ---------------- */
+function openEditEntryModal(productId, entryId){
+  const product = getProduct(productId);
+  if (!product) return;
+  const entry = product.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const type = categoryType(product.category);
+
+  if (type === 'facility'){
+    document.getElementById('modal-root').innerHTML = `
+      <div class="overlay" id="overlay-edit-entry">
+        <div class="modal-card">
+          <h3>記録を編集</h3>
+          <div class="modal-grid">
+            <div class="field date">
+              <label for="ee-date">日付</label>
+              <input id="ee-date" type="date" value="${entry.date}" />
+            </div>
+            <div class="field price">
+              <label for="ee-price">価格(円)</label>
+              <input id="ee-price" type="number" min="0" step="1" value="${entry.price}" />
+            </div>
+          </div>
+          <div class="field maker">
+            <label for="ee-entered-by">入力者名</label>
+            <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
+          </div>
+          <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <p class="modal-msg">写真(最大10枚)は記録一覧の「写真」ボタンから管理できます。</p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
+            <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (type === 'roughage'){
+    document.getElementById('modal-root').innerHTML = `
+      <div class="overlay" id="overlay-edit-entry">
+        <div class="modal-card">
+          <h3>記録を編集</h3>
+          <div class="modal-grid">
+            <div class="field date">
+              <label for="ee-date">日付</label>
+              <input id="ee-date" type="date" value="${entry.date}" />
+            </div>
+            <div class="field">
+              <label for="ee-form">形態</label>
+              <select id="ee-form">${roughageFormOptionsHtml(entry.form)}</select>
+            </div>
+          </div>
+          <div class="field maker">
+            <label for="ee-maker">メーカー名(任意)</label>
+            <input id="ee-maker" type="text" value="${escapeHtml(entry.manufacturer || '')}" />
+          </div>
+          <div class="modal-grid">
+            <div class="field qty">
+              <label for="ee-weight">重量(kg)</label>
+              <input id="ee-weight" type="number" min="0" step="0.1" value="${entry.weight}" />
+            </div>
+            <div class="field qty">
+              <label for="ee-dm-percent">乾物%(％)</label>
+              <input id="ee-dm-percent" type="number" min="0" max="100" step="0.1" value="${entry.dmPercent}" />
+            </div>
+          </div>
+          <p style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 12px;">乾物摂取量: <span id="ee-dm-preview" class="mono">—</span></p>
+          <div class="modal-grid">
+            <div class="field price">
+              <label for="ee-price">価格(円)</label>
+              <input id="ee-price" type="number" min="0" step="1" value="${entry.price}" />
+            </div>
+            <div class="field">
+              <label for="ee-freight-price">運賃込み価格(円・任意)</label>
+              <input id="ee-freight-price" type="number" min="0" step="1" value="${entry.freightPrice !== null && entry.freightPrice !== undefined ? entry.freightPrice : ''}" placeholder="未入力なら価格を使用" />
+            </div>
+          </div>
+          <div class="field maker">
+            <label for="ee-entered-by">入力者名</label>
+            <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
+          </div>
+          <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
+            <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    document.getElementById('modal-root').innerHTML = `
+      <div class="overlay" id="overlay-edit-entry">
+        <div class="modal-card">
+          <h3>記録を編集</h3>
+          <div class="modal-grid">
+            <div class="field date">
+              <label for="ee-date">日付</label>
+              <input id="ee-date" type="date" value="${entry.date}" />
+            </div>
+            <div class="field maker">
+              <label for="ee-maker">メーカー名(任意)</label>
+              <input id="ee-maker" type="text" value="${escapeHtml(entry.manufacturer || '')}" />
+            </div>
+          </div>
+          <div class="modal-grid">
+            <div class="field-duo">
+              <label>規格</label>
+              <div class="row">
+                <input id="ee-spec-qty" type="number" min="0" step="0.1" value="${entry.specQty}" />
+                <select id="ee-spec-unit">${unitOptionsHtml(SPEC_UNITS, entry.specUnit)}</select>
+              </div>
+            </div>
+            <div class="field price">
+              <label for="ee-price">価格(円)</label>
+              <input id="ee-price" type="number" min="0" step="1" value="${entry.price}" />
+            </div>
+          </div>
+          <div class="field-duo">
+            <label>使用量(日/頭)</label>
+            <div class="row">
+              <input id="ee-usage-qty" type="number" min="0" step="0.1" value="${entry.usageQty}" />
+              <select id="ee-usage-unit">${unitOptionsHtml(USAGE_UNITS, entry.usageUnit)}</select>
+            </div>
+          </div>
+          ${extraFieldsFor(product.category) === 'colostrum' ? `
+          <div class="field qty">
+            <label for="ee-igg">IgG含量(g/L・任意)</label>
+            <input id="ee-igg" type="number" min="0" step="0.1" value="${entry.igg !== null && entry.igg !== undefined ? entry.igg : ''}" />
+          </div>` : ''}
+          ${extraFieldsFor(product.category) === 'milkreplacer' ? `
+          <div class="modal-grid">
+            <div class="field qty">
+              <label for="ee-cp">CP(%・任意)</label>
+              <input id="ee-cp" type="number" min="0" step="0.1" value="${entry.cp !== null && entry.cp !== undefined ? entry.cp : ''}" />
+            </div>
+            <div class="field qty">
+              <label for="ee-fat">FAT(%・任意)</label>
+              <input id="ee-fat" type="number" min="0" step="0.1" value="${entry.fat !== null && entry.fat !== undefined ? entry.fat : ''}" />
+            </div>
+            <div class="field qty">
+              <label for="ee-tdn">TDN(%・任意)</label>
+              <input id="ee-tdn" type="number" min="0" step="0.1" value="${entry.tdn !== null && entry.tdn !== undefined ? entry.tdn : ''}" />
+            </div>
+          </div>
+          <div class="modal-grid">
+            <div class="field qty">
+              <label for="ee-fiber">Fiber(%・任意)</label>
+              <input id="ee-fiber" type="number" min="0" step="0.1" value="${entry.fiber !== null && entry.fiber !== undefined ? entry.fiber : ''}" />
+            </div>
+            <div class="field qty">
+              <label for="ee-ash">Ash(%・任意)</label>
+              <input id="ee-ash" type="number" min="0" step="0.1" value="${entry.ash !== null && entry.ash !== undefined ? entry.ash : ''}" />
+            </div>
+            <div class="field qty">
+              <label for="ee-animal-ratio">動物性飼料の割合(%・任意)</label>
+              <input id="ee-animal-ratio" type="number" min="0" max="100" step="0.1" value="${entry.animalRatio !== null && entry.animalRatio !== undefined ? entry.animalRatio : ''}" />
+            </div>
+          </div>` : ''}
+          <div class="field maker">
+            <label for="ee-entered-by">入力者名</label>
+            <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
+          </div>
+          <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
+            <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('btn-cancel-edit-entry').onclick = closeModal;
+  document.getElementById('overlay-edit-entry').addEventListener('click', e => {
+    if (e.target.id === 'overlay-edit-entry') closeModal();
+  });
+
+  if (type === 'roughage'){
+    function updateEeDmPreview(){
+      const w = parseFloat(document.getElementById('ee-weight').value);
+      const dm = parseFloat(document.getElementById('ee-dm-percent').value);
+      const preview = document.getElementById('ee-dm-preview');
+      preview.textContent = (!isNaN(w) && w > 0 && !isNaN(dm) && dm >= 0)
+        ? (Math.round(w * dm / 100 * 10) / 10).toLocaleString('ja-JP') + ' kg'
+        : '—';
+    }
+    document.getElementById('ee-weight').addEventListener('input', updateEeDmPreview);
+    document.getElementById('ee-dm-percent').addEventListener('input', updateEeDmPreview);
+    updateEeDmPreview();
+  }
+
+  document.getElementById('btn-save-edit-entry').onclick = async () => {
+    const date = document.getElementById('ee-date').value || entry.date;
+    const price = parseFloat(document.getElementById('ee-price').value);
+    if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
+    const enteredBy = document.getElementById('ee-entered-by').value.trim();
+    if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+
+    if (type === 'facility'){
+      entry.date = date;
+      entry.price = price;
+      entry.enteredBy = enteredBy;
+    } else if (type === 'roughage'){
+      const weight = parseFloat(document.getElementById('ee-weight').value);
+      const dmPercent = parseFloat(document.getElementById('ee-dm-percent').value);
+      const freightRaw = document.getElementById('ee-freight-price').value;
+      if (isNaN(weight) || weight <= 0 || isNaN(dmPercent) || dmPercent < 0 || dmPercent > 100){
+        showToast('重量・乾物%を正しく入力してください'); return;
+      }
+      if (freightRaw !== '' && (isNaN(parseFloat(freightRaw)) || parseFloat(freightRaw) < 0)){
+        showToast('運賃込み価格を正しく入力してください'); return;
+      }
+      entry.date = date;
+      entry.price = price;
+      entry.form = document.getElementById('ee-form').value;
+      entry.manufacturer = document.getElementById('ee-maker').value.trim();
+      entry.weight = weight;
+      entry.dmPercent = dmPercent;
+      entry.freightPrice = freightRaw === '' ? null : parseFloat(freightRaw);
+      entry.enteredBy = enteredBy;
+    } else {
+      const specQty = parseFloat(document.getElementById('ee-spec-qty').value);
+      const usageQty = parseFloat(document.getElementById('ee-usage-qty').value);
+      if (isNaN(specQty) || specQty <= 0 || isNaN(usageQty) || usageQty < 0){
+        showToast('規格・使用量を正しく入力してください'); return;
+      }
+      entry.date = date;
+      entry.price = price;
+      entry.manufacturer = document.getElementById('ee-maker').value.trim();
+      entry.specQty = specQty;
+      entry.specUnit = document.getElementById('ee-spec-unit').value;
+      entry.usageQty = usageQty;
+      entry.usageUnit = document.getElementById('ee-usage-unit').value;
+      entry.enteredBy = enteredBy;
+      const extra = extraFieldsFor(product.category);
+      if (extra === 'colostrum'){
+        const iggRaw = document.getElementById('ee-igg').value;
+        entry.igg = iggRaw === '' ? null : parseFloat(iggRaw);
+      } else if (extra === 'milkreplacer'){
+        const cpRaw = document.getElementById('ee-cp').value;
+        const fatRaw = document.getElementById('ee-fat').value;
+        const tdnRaw = document.getElementById('ee-tdn').value;
+        const fiberRaw = document.getElementById('ee-fiber').value;
+        const ashRaw = document.getElementById('ee-ash').value;
+        const animalRatioRaw = document.getElementById('ee-animal-ratio').value;
+        entry.cp = cpRaw === '' ? null : parseFloat(cpRaw);
+        entry.fat = fatRaw === '' ? null : parseFloat(fatRaw);
+        entry.tdn = tdnRaw === '' ? null : parseFloat(tdnRaw);
+        entry.fiber = fiberRaw === '' ? null : parseFloat(fiberRaw);
+        entry.ash = ashRaw === '' ? null : parseFloat(ashRaw);
+        entry.animalRatio = animalRatioRaw === '' ? null : parseFloat(animalRatioRaw);
+      }
+    }
+    setLastEnteredBy(enteredBy);
+    saveData(); render(); closeModal();
+  };
+}
+
+function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+
+function openConfirmModal(title, message, confirmLabel, onConfirm){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="overlay" id="overlay-confirm">
+      <div class="modal-card">
+        <h3>${escapeHtml(title)}</h3>
+        <p class="modal-msg">${escapeHtml(message)}</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-cancel-confirm">キャンセル</button>
+          <button class="btn btn-danger" id="btn-confirm-confirm">${escapeHtml(confirmLabel)}</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('btn-cancel-confirm').onclick = closeModal;
+  document.getElementById('overlay-confirm').addEventListener('click', e => {
+    if (e.target.id === 'overlay-confirm') closeModal();
+  });
+  document.getElementById('btn-confirm-confirm').onclick = () => { onConfirm(); closeModal(); };
+}
+
+async function openEntryPhotosModal(productId, entryId){
+  const product = getProduct(productId);
+  if (!product) return;
+  const entry = product.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  if (!entry.photoKeys) entry.photoKeys = [];
+
+  const photos = await Promise.all(entry.photoKeys.map(async id => ({ id, dataUrl: await getPhoto('photo:' + id) })));
+  const remaining = 10 - entry.photoKeys.length;
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="overlay" id="overlay-entry-photos">
+      <div class="modal-card" style="width:480px;">
+        <h3>記録の写真(最大10枚)</h3>
+        <div class="photo-grid" id="entry-photo-grid">
+          ${photos.length === 0 ? `<p class="modal-msg">まだ写真がありません。</p>` : photos.map(p => `
+            <div class="photo-thumb-wrap">
+              ${p.dataUrl ? `<img src="${p.dataUrl}" class="photo-thumb" alt="記録の写真" />` : `<div class="photo-thumb photo-thumb-empty">読み込み中</div>`}
+              <button class="photo-thumb-del" data-photo-id="${p.id}" title="この写真を削除">×</button>
+            </div>`).join('')}
+        </div>
+        ${remaining > 0
+          ? `<div class="field" style="margin-top:14px;">
+               <label for="ep-add-photos">写真を追加(残り${remaining}枚まで)</label>
+               <input id="ep-add-photos" type="file" accept="image/*" multiple />
+             </div>`
+          : `<p class="modal-msg" style="margin-top:14px;">上限の10枚に達しています。</p>`}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="btn-close-entry-photos">閉じる</button>
+        </div>
+      </div>
+    </div>`;
+
+  const finishAndClose = () => { closeModal(); render(); };
+  document.getElementById('btn-close-entry-photos').onclick = finishAndClose;
+  document.getElementById('overlay-entry-photos').addEventListener('click', e => {
+    if (e.target.id === 'overlay-entry-photos') finishAndClose();
+  });
+
+  document.querySelectorAll('#entry-photo-grid [data-photo-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.photoId;
+      const key = 'photo:' + id;
+      try{ await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+      delete photoCache[key];
+      entry.photoKeys = entry.photoKeys.filter(k => k !== id);
+      saveData();
+      openEntryPhotosModal(productId, entryId);
+    });
+  });
+
+  const addInput = document.getElementById('ep-add-photos');
+  if (addInput){
+    addInput.addEventListener('change', async () => {
+      const slots = 10 - entry.photoKeys.length;
+      const files = Array.from(addInput.files).slice(0, slots);
+      for (const file of files){
+        try{
+          const dataUrl = await readAndCompressImage(file);
+          const photoId = uid('photo');
+          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+          if (res){ entry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+          else showToast('写真の保存に失敗しました');
+        }catch(err){ showToast('写真の保存に失敗しました'); }
+      }
+      saveData();
+      openEntryPhotosModal(productId, entryId);
+    });
+  }
+}
+
+async function openProductPhotoModal(productId){
+  const product = getProduct(productId);
+  if (!product) return;
+  const key = productPhotoKey(productId);
+  const dataUrl = product.hasPhoto ? await getPhoto(key) : null;
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="overlay" id="overlay-product-photo">
+      <div class="modal-card">
+        <h3>製品の写真</h3>
+        ${dataUrl
+          ? `<img src="${dataUrl}" alt="${escapeHtml(product.name)}" style="max-width:100%;max-height:260px;object-fit:contain;display:block;margin:0 auto 14px;border-radius:4px;" />`
+          : `<p class="modal-msg" style="margin-bottom:14px;">まだ写真が設定されていません。</p>`}
+        <div class="field">
+          <label for="pp-file">${dataUrl ? '写真を変更' : '写真を追加'}</label>
+          <input id="pp-file" type="file" accept="image/*" />
+        </div>
+        <div class="modal-actions">
+          ${dataUrl ? `<button class="btn btn-danger" id="btn-remove-photo" style="margin-right:auto;">写真を削除</button>` : ''}
+          <button class="btn btn-ghost" id="btn-cancel-photo">閉じる</button>
+          <button class="btn btn-primary" id="btn-save-photo">保存</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-cancel-photo').onclick = closeModal;
+  document.getElementById('overlay-product-photo').addEventListener('click', e => {
+    if (e.target.id === 'overlay-product-photo') closeModal();
+  });
+  if (dataUrl){
+    document.getElementById('btn-remove-photo').onclick = async () => {
+      try{ await window.storage.delete(key, false); }catch(e){ /* ignore */ }
+      delete photoCache[key];
+      product.hasPhoto = false;
+      saveData(); render(); closeModal();
+    };
+  }
+  document.getElementById('btn-save-photo').onclick = async () => {
+    const file = document.getElementById('pp-file').files[0];
+    if (!file){ showToast('写真ファイルを選択してください'); return; }
+    try{
+      const newDataUrl = await readAndCompressImage(file);
+      const res = await window.storage.set(key, newDataUrl, false);
+      if (res){
+        photoCache[key] = newDataUrl;
+        product.hasPhoto = true;
+        saveData(); render(); closeModal();
+      } else {
+        showToast('写真の保存に失敗しました');
+      }
+    }catch(err){
+      showToast('写真の保存に失敗しました');
+    }
+  };
+}
+
+/* ---------------- chart (single product) ---------------- */
+function buildChart(product, metric, valueFn){
+  valueFn = valueFn || metricValue;
+  const asc = sortedEntriesAsc(product);
+  const points = asc.map(e => ({ date: e.date, value: valueFn(e, metric) }))
+                     .filter(p => p.value !== null && p.value !== undefined && !isNaN(p.value));
+  if (points.length === 0){
+    return `<div class="chart-empty">この指標を計算できる記録がまだありません。</div>`;
+  }
+  const W = 640, H = 200, L = 50, R = 16, T = 16, B = 30;
+  const plotW = W - L - R, plotH = H - T - B;
+  const values = points.map(p => p.value);
+  let min = Math.min(...values), max = Math.max(...values);
+  if (min === max){ min -= Math.max(1, min*0.1); max += Math.max(1, max*0.1); }
+  const range = max - min;
+  const xStep = points.length > 1 ? plotW / (points.length - 1) : 0;
+  const xOf = i => L + xStep * i;
+  const yOf = v => T + plotH - ((v - min) / range) * plotH;
+
+  const linePts = points.map((p,i) => `${xOf(i).toFixed(1)},${yOf(p.value).toFixed(1)}`).join(' ');
+  const circles = points.map((p,i) => {
+    const x = xOf(i), y = yOf(p.value);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="var(--indigo)"><title>${dispDate(p.date)}: ${Math.round(p.value*10)/10}</title></circle>`;
+  }).join('');
+
+  const grid = [0,0.5,1].map(t => {
+    const y = T + plotH * t;
+    const v = max - range * t;
+    return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="${L-6}" y="${y+3}" text-anchor="end" font-size="9.5" fill="var(--ink-soft)" font-family="JetBrains Mono, monospace">${Math.round(v*10)/10}</text>`;
+  }).join('');
+
+  let xLabels = '';
+  if (points.length === 1){
+    xLabels = `<text x="${xOf(0)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--ink-soft)">${shortDate(points[0].date)}</text>`;
+  } else {
+    const idxs = points.length >= 3 ? [0, Math.floor((points.length-1)/2), points.length-1] : [0, points.length-1];
+    xLabels = [...new Set(idxs)].map(i =>
+      `<text x="${xOf(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--ink-soft)">${shortDate(points[i].date)}</text>`
+    ).join('');
+  }
+
+  const polyline = points.length > 1
+    ? `<polyline points="${linePts}" fill="none" stroke="var(--indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    : '';
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${polyline}${circles}${xLabels}</svg>`;
+}
+
+/* ---------------- chart (compare multiple products, bar chart) ---------------- */
+function truncateName(name, max){
+  max = max || 9;
+  return name.length > max ? name.slice(0, max - 1) + '…' : name;
+}
+function buildCompareBarChart(items, metric){
+  const data = items.map(it => {
+    const latest = sortedEntriesDesc(it.product)[0];
+    const raw = latest ? compareMetricValue(latest, metric) : null;
+    const value = (raw !== null && raw !== undefined && !isNaN(raw)) ? raw : null;
+    return { product: it.product, color: it.color, value };
+  });
+
+  if (data.every(d => d.value === null)){
+    return `<div class="chart-empty">この指標を計算できる記録がまだありません。</div>`;
+  }
+
+  const W = 640, H = 260, L = 56, R = 20, T = 20, B = 56;
+  const plotW = W - L - R, plotH = H - T - B;
+  const values = data.filter(d => d.value !== null).map(d => d.value);
+  let maxV = Math.max(...values, 0);
+  if (maxV === 0) maxV = 1;
+  const scaleMax = maxV * 1.18;
+
+  const n = data.length;
+  const slotW = plotW / n;
+  const barW = Math.min(86, slotW * 0.46);
+
+  const grid = [0,0.5,1].map(f => {
+    const y = T + plotH * (1 - f);
+    const v = scaleMax * f;
+    return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="${L-8}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--ink-soft)" font-family="JetBrains Mono, monospace">${Math.round(v*10)/10}</text>`;
+  }).join('');
+
+  const bars = data.map((d,i) => {
+    const cx = L + slotW * i + slotW / 2;
+    const nameLabel = `<text x="${cx.toFixed(1)}" y="${H-14}" text-anchor="middle" font-size="11" fill="var(--ink-soft)"><title>${escapeHtml(d.product.name)}</title>${escapeHtml(truncateName(d.product.name))}</text>`;
+    if (d.value === null){
+      return `<text x="${cx.toFixed(1)}" y="${(T+plotH-6).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--ink-soft)">—</text>${nameLabel}`;
+    }
+    const barH = Math.max(2, (d.value / scaleMax) * plotH);
+    const x = cx - barW / 2;
+    const y = T + plotH - barH;
+    return `
+      <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${d.color}">
+        <title>${escapeHtml(d.product.name)}: ${Math.round(d.value*10)/10}</title>
+      </rect>
+      <text x="${cx.toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--ink)" font-family="JetBrains Mono, monospace">${Math.round(d.value*10)/10}</text>
+      ${nameLabel}`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}</svg>`;
+}
+
+/* ---------------- rendering ---------------- */
+function render(){
+  renderTabs();
+  if (activeTab === 'compare'){
+    document.getElementById('sidebar').style.display = 'none';
+    renderCompare();
+  } else {
+    document.getElementById('sidebar').style.display = '';
+    renderSidebar();
+    renderMain();
+  }
+  loadThumbnailsAfterRender();
+}
+
+function renderTabs(){
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === activeTab);
+  });
+}
+
+function renderSidebar(){
+  const el = document.getElementById('sidebar');
+  if (loading){ el.innerHTML = `<div class="sidebar-empty">読み込み中…</div>`; return; }
+
+  const filterOptions = `<option value="__all__">すべての種類</option>` +
+    appData.categories.map(c => `<option value="${escapeHtml(c)}" ${c===categoryFilter?'selected':''}>${escapeHtml(c)}</option>`).join('');
+
+  if (appData.products.length === 0){
+    el.innerHTML = `
+      <div class="sidebar-filter"><select id="sidebar-cat-filter">${filterOptions}</select></div>
+      <div class="sidebar-empty">製品を追加すると、ここに一覧が表示されます。</div>`;
+    return;
+  }
+
+  const filtered = appData.products.filter(p => categoryFilter === '__all__' || p.category === categoryFilter);
+  let body;
+  if (filtered.length === 0){
+    body = `<div class="sidebar-empty">この種類の製品はありません。</div>`;
+  } else {
+    const groups = [];
+    const order = categoryFilter === '__all__' ? appData.categories : [categoryFilter];
+    for (const cat of order){
+      const items = filtered.filter(p => p.category === cat);
+      if (items.length === 0) continue;
+      groups.push(`<div class="cat-head">${escapeHtml(cat)}・${items.length}件</div>` + items.map(p => {
+        const desc = sortedEntriesDesc(p);
+        const latest = desc[0];
+        const priceLabel = latest ? yen(latest.price) : '記録なし';
+        return `
+          <div class="product-item ${p.id === selectedProductId ? 'active' : ''}" data-action="select-product" data-id="${p.id}">
+            ${p.hasPhoto ? `<img class="thumb-sm" data-photo-key="${productPhotoKey(p.id)}" alt="" />` : ''}
+            <div class="info">
+              <div class="name">${escapeHtml(p.name)}</div>
+              <div class="price-line mono">${priceLabel}</div>
+            </div>
+          </div>`;
+      }).join(''));
+    }
+    body = groups.join('');
+  }
+
+  el.innerHTML = `<div class="sidebar-filter"><select id="sidebar-cat-filter">${filterOptions}</select></div>${body}`;
+  document.getElementById('sidebar-cat-filter').addEventListener('change', e => {
+    categoryFilter = e.target.value; render();
+  });
+}
+
+function renderMain(){
+  const el = document.getElementById('main');
+  if (loading){ el.innerHTML = `<div class="panel"><div class="loading-state">読み込み中…</div></div>`; return; }
+
+  if (appData.products.length === 0){
+    el.innerHTML = `
+      <div class="panel">
+        <div class="empty-state">
+          <h2>製品がまだありません</h2>
+          <p>価格を記録したい製品を追加してください。</p>
+          <button class="btn btn-primary" id="btn-empty-add">＋ 最初の製品を追加</button>
+        </div>
+      </div>`;
+    document.getElementById('btn-empty-add').onclick = openAddProductModal;
+    return;
+  }
+
+  const product = getProduct(selectedProductId);
+  if (!product){
+    el.innerHTML = `<div class="panel"><div class="empty-state"><h2>製品を選択してください</h2><p>左の一覧から製品を選ぶと、価格の記録が表示されます。</p></div></div>`;
+    return;
+  }
+
+  const catType = categoryType(product.category);
+  const desc = sortedEntriesDesc(product);
+  const latest = desc[0], prev = desc[1];
+
+  function statCard(label, latestVal, prevVal, formatter){
+    if (latestVal === null || latestVal === undefined || isNaN(latestVal)){
+      return `<div class="stat-card"><div class="label">${label}</div><div class="value mono">—</div></div>`;
+    }
+    let deltaHtml = '';
+    if (prevVal !== null && prevVal !== undefined && !isNaN(prevVal)){
+      const diff = latestVal - prevVal;
+      const cls = diff > 0 ? 'delta-up' : diff < 0 ? 'delta-down' : 'delta-flat';
+      const sign = diff > 0 ? '+' : '';
+      deltaHtml = `<div class="delta ${cls}">前回比 ${sign}${formatter(diff)}</div>`;
+    }
+    return `<div class="stat-card"><div class="label">${label}</div><div class="value mono">${formatter(latestVal)}</div>${deltaHtml}</div>`;
+  }
+
+  let statRow, chartToggleHtml, chartHtml, formHtml, entriesHtml;
+
+  if (catType === 'facility'){
+    statRow = !latest ? `<p class="no-record">まだ価格の記録がありません。下のフォームから記録しましょう。</p>` : `
+      <div class="stat-row">${statCard('直近の価格', latest.price, prev ? prev.price : null, v => yen(v))}</div>`;
+    chartToggleHtml = '';
+    chartHtml = buildChart(product, 'price');
+    formHtml = `
+      <form class="entry-form" id="price-form">
+        <div class="field date">
+          <label for="f-date">日付</label>
+          <input id="f-date" type="date" value="${todayStr()}" required />
+        </div>
+        <div class="field price">
+          <label for="f-price">価格(円)</label>
+          <input id="f-price" type="number" min="0" step="1" placeholder="0" required />
+        </div>
+        <div class="field maker">
+          <label for="f-entered-by">入力者名</label>
+          <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
+        </div>
+        <div class="field">
+          <label for="f-photo">この記録の写真(任意・最大10枚)</label>
+          <input id="f-photo" type="file" accept="image/*" multiple />
+        </div>
+        <button type="submit" class="btn btn-primary">記録する</button>
+      </form>`;
+    entriesHtml = desc.length === 0 ? '' : `
+      <div class="entries-title">記録一覧(${desc.length}件)</div>
+      <div class="table-scroll">
+      <table class="ledger">
+        <thead><tr><th>日付</th><th class="num">価格</th><th>入力者</th><th>入力日時</th><th></th></tr></thead>
+        <tbody>
+          ${desc.map(e => `<tr>
+            <td class="mono">${dispDate(e.date)}</td>
+            <td class="num">${yen(e.price)}</td>
+            <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
+            <td class="mono">${formatDateTime(e.createdAt)}</td>
+            <td><div class="row-actions">
+              <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
+              <button class="btn btn-ghost btn-sm" data-action="manage-entry-photos" data-product="${product.id}" data-id="${e.id}">${(e.photoKeys && e.photoKeys.length) ? `写真(${e.photoKeys.length})` : '写真を追加'}</button>
+              <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
+            </div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>`;
+  } else if (catType === 'roughage'){
+    const latestKgu = latest ? roughageUnitPrice(latest) : null;
+    const prevKgu = prev ? roughageUnitPrice(prev) : null;
+    const latestDry = latest ? roughageDryUnitPrice(latest) : null;
+    const prevDry = prev ? roughageDryUnitPrice(prev) : null;
+    const latestBasis = latest ? roughageBasisPrice(latest) : null;
+    const prevBasis = prev ? roughageBasisPrice(prev) : null;
+
+    statRow = !latest ? `<p class="no-record">まだ価格の記録がありません。下のフォームから記録しましょう。</p>` : `
+      <div class="stat-row">
+        ${statCard('直近の価格(運賃込み基準)', latestBasis, prevBasis, v => yen(v))}
+        ${statCard('㎏単価', latestKgu, prevKgu, v => yenCalc(v))}
+        ${statCard('乾物㎏単価', latestDry, prevDry, v => yenCalc(v))}
+      </div>`;
+
+    chartToggleHtml = `
+      <div class="chart-toggle">
+        <button data-rough-metric="price" class="${roughageChartMetric==='price'?'active':''}">価格(運賃込み基準)</button>
+        <button data-rough-metric="kgunit" class="${roughageChartMetric==='kgunit'?'active':''}">㎏単価</button>
+        <button data-rough-metric="drykgunit" class="${roughageChartMetric==='drykgunit'?'active':''}">乾物㎏単価</button>
+      </div>`;
+    chartHtml = buildChart(product, roughageChartMetric, roughageMetricValue);
+
+    formHtml = `
+      <form class="entry-form" id="price-form">
+        <div class="field date">
+          <label for="f-date">日付</label>
+          <input id="f-date" type="date" value="${todayStr()}" required />
+        </div>
+        <div class="field">
+          <label for="f-form">形態</label>
+          <select id="f-form">${roughageFormOptionsHtml(ROUGHAGE_FORMS[0])}</select>
+        </div>
+        <div class="field maker">
+          <label for="f-maker">メーカー名(任意)</label>
+          <input id="f-maker" type="text" placeholder="例: ○○農協" />
+        </div>
+        <div class="field qty">
+          <label for="f-weight">重量(kg)</label>
+          <input id="f-weight" type="number" min="0" step="0.1" placeholder="500" required />
+        </div>
+        <div class="field qty">
+          <label for="f-dm-percent">乾物%(％)</label>
+          <input id="f-dm-percent" type="number" min="0" max="100" step="0.1" placeholder="35" required />
+        </div>
+        <div class="field">
+          <label>乾物摂取量(kg)</label>
+          <div class="mono" id="f-dm-preview" style="padding:8px 0;font-size:13px;color:var(--ink-soft);">—</div>
+        </div>
+        <div class="field price">
+          <label for="f-price">価格(円)</label>
+          <input id="f-price" type="number" min="0" step="1" placeholder="0" required />
+        </div>
+        <div class="field">
+          <label for="f-freight-price">運賃込み価格(円・任意)</label>
+          <input id="f-freight-price" type="number" min="0" step="1" placeholder="未入力なら価格を使用" />
+        </div>
+        <div class="field maker">
+          <label for="f-entered-by">入力者名</label>
+          <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
+        </div>
+        <button type="submit" class="btn btn-primary">記録する</button>
+      </form>`;
+
+    entriesHtml = desc.length === 0 ? '' : `
+      <div class="entries-title">記録一覧(${desc.length}件)</div>
+      <div class="table-scroll">
+      <table class="ledger">
+        <thead><tr>
+          <th>日付</th><th>形態</th><th>メーカー</th><th class="num">重量(kg)</th><th class="num">乾物%</th><th class="num">乾物摂取量(kg)</th><th class="num">価格</th><th class="num">運賃込み価格</th><th class="num">㎏単価</th><th class="num">乾物㎏単価</th><th>入力者</th><th>入力日時</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${desc.map(e => {
+            const ku = roughageUnitPrice(e);
+            const dku = roughageDryUnitPrice(e);
+            const dw = roughageDryWeight(e);
+            return `<tr>
+              <td class="mono">${dispDate(e.date)}</td>
+              <td>${escapeHtml(e.form || '—')}</td>
+              <td>${e.manufacturer ? escapeHtml(e.manufacturer) : '—'}</td>
+              <td class="num">${e.weight}</td>
+              <td class="num">${e.dmPercent}</td>
+              <td class="num">${dw !== null ? (Math.round(dw*10)/10).toLocaleString('ja-JP') : '—'}</td>
+              <td class="num">${yen(e.price)}</td>
+              <td class="num">${(e.freightPrice !== null && e.freightPrice !== undefined) ? yen(e.freightPrice) : '—'}</td>
+              <td class="num">${ku !== null ? yenCalc(ku) : '—'}</td>
+              <td class="num">${dku !== null ? yenCalc(dku) : '—'}</td>
+              <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
+              <td class="mono">${formatDateTime(e.createdAt)}</td>
+              <td><div class="row-actions">
+                <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
+                <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>`;
+  } else {
+    const dim = metricDim(product);
+    const ul = unitPriceLabel(dim);
+    const latestKgu = latest ? calcUnitPrice(latest) : null;
+    const prevKgu = prev ? calcUnitPrice(prev) : null;
+    const latestPerHead = latest ? calcPerHead(latest) : null;
+    const prevPerHead = prev ? calcPerHead(prev) : null;
+    const extra = extraFieldsFor(product.category);
+
+    statRow = !latest ? `<p class="no-record">まだ価格の記録がありません。下のフォームから記録しましょう。</p>` : `
+      <div class="stat-row">
+        ${statCard('直近の価格', latest.price, prev ? prev.price : null, v => yen(v))}
+        ${statCard(ul, latestKgu ? latestKgu.value : null, prevKgu ? prevKgu.value : null, v => yenCalc(v))}
+        ${statCard('一頭あたり単価(日)', latestPerHead, prevPerHead, v => yenCalc(v))}
+      </div>`;
+
+    chartToggleHtml = `
+      <div class="chart-toggle">
+        <button data-metric="price" class="${chartMetric==='price'?'active':''}">価格</button>
+        <button data-metric="kgunit" class="${chartMetric==='kgunit'?'active':''}">${ul}</button>
+        <button data-metric="perhead" class="${chartMetric==='perhead'?'active':''}">一頭あたり単価(日)</button>
+      </div>`;
+    chartHtml = buildChart(product, chartMetric);
+
+    let extraFormHtml = '';
+    if (extra === 'colostrum'){
+      extraFormHtml = `
+        <div class="field qty">
+          <label for="f-igg">IgG含量(g/L・任意)</label>
+          <input id="f-igg" type="number" min="0" step="0.1" placeholder="50" />
+        </div>`;
+    } else if (extra === 'milkreplacer'){
+      extraFormHtml = `
+        <div class="field qty">
+          <label for="f-cp">CP(%・任意)</label>
+          <input id="f-cp" type="number" min="0" step="0.1" placeholder="24" />
+        </div>
+        <div class="field qty">
+          <label for="f-fat">FAT(%・任意)</label>
+          <input id="f-fat" type="number" min="0" step="0.1" placeholder="18" />
+        </div>
+        <div class="field qty">
+          <label for="f-tdn">TDN(%・任意)</label>
+          <input id="f-tdn" type="number" min="0" step="0.1" placeholder="90" />
+        </div>
+        <div class="field qty">
+          <label for="f-fiber">Fiber(%・任意)</label>
+          <input id="f-fiber" type="number" min="0" step="0.1" placeholder="0.5" />
+        </div>
+        <div class="field qty">
+          <label for="f-ash">Ash(%・任意)</label>
+          <input id="f-ash" type="number" min="0" step="0.1" placeholder="7" />
+        </div>
+        <div class="field qty">
+          <label for="f-animal-ratio">動物性飼料の割合(%・任意)</label>
+          <input id="f-animal-ratio" type="number" min="0" max="100" step="0.1" placeholder="60" />
+        </div>`;
+    }
+
+    formHtml = `
+      <form class="entry-form" id="price-form">
+        <div class="field date">
+          <label for="f-date">日付</label>
+          <input id="f-date" type="date" value="${todayStr()}" required />
+        </div>
+        <div class="field maker">
+          <label for="f-maker">メーカー名(任意)</label>
+          <input id="f-maker" type="text" placeholder="例: ○○商会" />
+        </div>
+        <div class="field-duo">
+          <label>規格</label>
+          <div class="row">
+            <input id="f-spec-qty" type="number" min="0" step="0.1" placeholder="20" required />
+            <select id="f-spec-unit">${unitOptionsHtml(SPEC_UNITS, 'kg')}</select>
+          </div>
+        </div>
+        <div class="field price">
+          <label for="f-price">価格(円)</label>
+          <input id="f-price" type="number" min="0" step="1" placeholder="0" required />
+        </div>
+        <div class="field-duo">
+          <label>使用量(日/頭)</label>
+          <div class="row">
+            <input id="f-usage-qty" type="number" min="0" step="0.1" placeholder="50" required />
+            <select id="f-usage-unit">${unitOptionsHtml(USAGE_UNITS, 'g')}</select>
+          </div>
+        </div>
+        ${extraFormHtml}
+        <div class="field maker">
+          <label for="f-entered-by">入力者名</label>
+          <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
+        </div>
+        <button type="submit" class="btn btn-primary">記録する</button>
+      </form>`;
+
+    let extraHeaderHtml = '';
+    let extraCellFn = () => '';
+    if (extra === 'colostrum'){
+      extraHeaderHtml = `<th class="num">IgG(g/L)</th>`;
+      extraCellFn = e => `<td class="num">${(e.igg !== undefined && e.igg !== null) ? e.igg : '—'}</td>`;
+    } else if (extra === 'milkreplacer'){
+      extraHeaderHtml = `<th class="num">CP(%)</th><th class="num">FAT(%)</th><th class="num">TDN(%)</th><th class="num">Fiber(%)</th><th class="num">Ash(%)</th><th class="num">動物性割合(%)</th>`;
+      extraCellFn = e => `<td class="num">${(e.cp !== undefined && e.cp !== null) ? e.cp : '—'}</td><td class="num">${(e.fat !== undefined && e.fat !== null) ? e.fat : '—'}</td><td class="num">${(e.tdn !== undefined && e.tdn !== null) ? e.tdn : '—'}</td><td class="num">${(e.fiber !== undefined && e.fiber !== null) ? e.fiber : '—'}</td><td class="num">${(e.ash !== undefined && e.ash !== null) ? e.ash : '—'}</td><td class="num">${(e.animalRatio !== undefined && e.animalRatio !== null) ? e.animalRatio : '—'}</td>`;
+    }
+
+    entriesHtml = desc.length === 0 ? '' : `
+      <div class="entries-title">記録一覧(${desc.length}件)</div>
+      <div class="table-scroll">
+      <table class="ledger">
+        <thead><tr>
+          <th>日付</th><th>メーカー</th><th>規格</th><th class="num">価格</th><th class="num">使用量(日/頭)</th><th class="num">${ul}</th><th class="num">一頭あたり/日</th>${extraHeaderHtml}<th>入力者</th><th>入力日時</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${desc.map(e => {
+            const kgu = calcUnitPrice(e);
+            const ph = calcPerHead(e);
+            return `<tr>
+              <td class="mono">${dispDate(e.date)}</td>
+              <td>${e.manufacturer ? escapeHtml(e.manufacturer) : '—'}</td>
+              <td class="mono">${e.specQty}${e.specUnit}</td>
+              <td class="num">${yen(e.price)}</td>
+              <td class="num">${e.usageQty}${e.usageUnit}</td>
+              <td class="num">${kgu ? yenCalc(kgu.value) : '—'}</td>
+              <td class="num">${ph !== null ? yenCalc(ph) : '—'}</td>
+              ${extraCellFn(e)}
+              <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
+              <td class="mono">${formatDateTime(e.createdAt)}</td>
+              <td><div class="row-actions">
+                <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
+                <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="panel">
+      <div class="product-head">
+        <div class="product-head-main">
+          ${product.hasPhoto
+            ? `<img class="thumb-lg" data-photo-key="${productPhotoKey(product.id)}" data-action="manage-photo" data-id="${product.id}" alt="${escapeHtml(product.name)}" />`
+            : `<div class="thumb-lg thumb-placeholder" data-action="manage-photo" data-id="${product.id}">写真なし</div>`}
+          <div>
+            <h2>${escapeHtml(product.name)}</h2>
+            <span class="tag">${escapeHtml(product.category)}</span><br/>
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="manage-photo" data-id="${product.id}">${product.hasPhoto ? '写真を変更' : '＋ 写真を追加'}</button>
+          </div>
+        </div>
+        <div class="product-actions">
+          <button class="btn btn-ghost btn-sm" data-action="edit-product" data-id="${product.id}">製品を編集</button>
+          <button class="btn btn-ghost btn-sm" data-action="delete-product" data-id="${product.id}">製品を削除</button>
+        </div>
+      </div>
+
+      ${statRow}
+      ${chartToggleHtml}
+      <div class="chart-wrap">${chartHtml}</div>
+      ${formHtml}
+      ${entriesHtml}
+    </div>`;
+
+  if (catType === 'facility'){
+    document.getElementById('price-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const price = parseFloat(document.getElementById('f-price').value);
+      if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
+      const enteredBy = document.getElementById('f-entered-by').value.trim();
+      if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      const date = document.getElementById('f-date').value || todayStr();
+      const files = Array.from(document.getElementById('f-photo').files).slice(0, 10);
+      const entry = { id: uid('entry'), date, price, enteredBy, photoKeys: [], createdAt: Date.now() };
+      for (const file of files){
+        try{
+          const dataUrl = await readAndCompressImage(file);
+          const photoId = uid('photo');
+          const res = await window.storage.set('photo:' + photoId, dataUrl, false);
+          if (res){ entry.photoKeys.push(photoId); photoCache['photo:'+photoId] = dataUrl; }
+          else showToast('写真の保存に失敗しました');
+        }catch(err){ showToast('写真の保存に失敗しました'); }
+      }
+      product.entries.push(entry);
+      setLastEnteredBy(enteredBy);
+      saveData(); render();
+    });
+  } else if (catType === 'roughage'){
+    function updateFDmPreview(){
+      const w = parseFloat(document.getElementById('f-weight').value);
+      const dm = parseFloat(document.getElementById('f-dm-percent').value);
+      const preview = document.getElementById('f-dm-preview');
+      preview.textContent = (!isNaN(w) && w > 0 && !isNaN(dm) && dm >= 0)
+        ? (Math.round(w * dm / 100 * 10) / 10).toLocaleString('ja-JP') + ' kg'
+        : '—';
+    }
+    document.getElementById('f-weight').addEventListener('input', updateFDmPreview);
+    document.getElementById('f-dm-percent').addEventListener('input', updateFDmPreview);
+
+    document.getElementById('price-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const weight = parseFloat(document.getElementById('f-weight').value);
+      const dmPercent = parseFloat(document.getElementById('f-dm-percent').value);
+      const price = parseFloat(document.getElementById('f-price').value);
+      const freightRaw = document.getElementById('f-freight-price').value;
+      if (isNaN(weight) || weight <= 0 || isNaN(dmPercent) || dmPercent < 0 || dmPercent > 100 || isNaN(price) || price < 0){
+        showToast('重量・乾物%・価格を正しく入力してください'); return;
+      }
+      if (freightRaw !== '' && (isNaN(parseFloat(freightRaw)) || parseFloat(freightRaw) < 0)){
+        showToast('運賃込み価格を正しく入力してください'); return;
+      }
+      const enteredBy = document.getElementById('f-entered-by').value.trim();
+      if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      product.entries.push({
+        id: uid('entry'),
+        date: document.getElementById('f-date').value || todayStr(),
+        form: document.getElementById('f-form').value,
+        manufacturer: document.getElementById('f-maker').value.trim(),
+        weight, dmPercent, price,
+        freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
+        enteredBy,
+        createdAt: Date.now()
+      });
+      setLastEnteredBy(enteredBy);
+      saveData(); render();
+    });
+    document.querySelectorAll('[data-rough-metric]').forEach(btn => {
+      btn.addEventListener('click', () => { roughageChartMetric = btn.dataset.roughMetric; render(); });
+    });
+  } else {
+    document.getElementById('price-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const specQty = parseFloat(document.getElementById('f-spec-qty').value);
+      const price = parseFloat(document.getElementById('f-price').value);
+      const usageQty = parseFloat(document.getElementById('f-usage-qty').value);
+      if (isNaN(specQty) || specQty <= 0 || isNaN(price) || price < 0 || isNaN(usageQty) || usageQty < 0){
+        showToast('規格・価格・使用量を正しく入力してください'); return;
+      }
+      const enteredBy = document.getElementById('f-entered-by').value.trim();
+      if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      const newEntry = {
+        id: uid('entry'),
+        date: document.getElementById('f-date').value || todayStr(),
+        manufacturer: document.getElementById('f-maker').value.trim(),
+        specQty, specUnit: document.getElementById('f-spec-unit').value,
+        price,
+        usageQty, usageUnit: document.getElementById('f-usage-unit').value,
+        enteredBy,
+        createdAt: Date.now()
+      };
+      const extra = extraFieldsFor(product.category);
+      if (extra === 'colostrum'){
+        const iggRaw = document.getElementById('f-igg').value;
+        newEntry.igg = iggRaw === '' ? null : parseFloat(iggRaw);
+      } else if (extra === 'milkreplacer'){
+        const cpRaw = document.getElementById('f-cp').value;
+        const fatRaw = document.getElementById('f-fat').value;
+        const tdnRaw = document.getElementById('f-tdn').value;
+        const fiberRaw = document.getElementById('f-fiber').value;
+        const ashRaw = document.getElementById('f-ash').value;
+        const animalRatioRaw = document.getElementById('f-animal-ratio').value;
+        newEntry.cp = cpRaw === '' ? null : parseFloat(cpRaw);
+        newEntry.fat = fatRaw === '' ? null : parseFloat(fatRaw);
+        newEntry.tdn = tdnRaw === '' ? null : parseFloat(tdnRaw);
+        newEntry.fiber = fiberRaw === '' ? null : parseFloat(fiberRaw);
+        newEntry.ash = ashRaw === '' ? null : parseFloat(ashRaw);
+        newEntry.animalRatio = animalRatioRaw === '' ? null : parseFloat(animalRatioRaw);
+      }
+      product.entries.push(newEntry);
+      setLastEnteredBy(enteredBy);
+      saveData(); render();
+    });
+    document.querySelectorAll('[data-metric]').forEach(btn => {
+      btn.addEventListener('click', () => { chartMetric = btn.dataset.metric; render(); });
+    });
+  }
+}
+
+function renderCompare(){
+  const el = document.getElementById('main');
+  if (loading){ el.innerHTML = `<div class="panel"><div class="loading-state">読み込み中…</div></div>`; return; }
+
+  if (appData.products.length === 0){
+    el.innerHTML = `
+      <div class="panel">
+        <h2 class="display" style="font-size:19px;margin:0 0 4px;">製品比較</h2>
+        <div class="empty-state"><h2>比較できる製品がありません</h2><p>まず製品を追加してください。</p></div>
+      </div>`;
+    return;
+  }
+
+  function productOptionsHtml(selectedId, excludeIds){
+    let html = `<option value="">(未選択)</option>`;
+    for (const cat of appData.categories){
+      const items = appData.products.filter(p => p.category === cat && (p.id === selectedId || !excludeIds.includes(p.id)));
+      if (items.length === 0) continue;
+      html += `<optgroup label="${escapeHtml(cat)}">` + items.map(p =>
+        `<option value="${p.id}" ${p.id===selectedId?'selected':''}>${escapeHtml(p.name)}</option>`
+      ).join('') + `</optgroup>`;
+    }
+    return html;
+  }
+
+  const pickerHtml = [0,1,2].map(i => {
+    const excludeIds = compareSelection.filter((id, idx) => idx !== i && id);
+    return `
+      <div class="field">
+        <label for="cmp-select-${i}">比較する製品${i+1}</label>
+        <select id="cmp-select-${i}" data-slot="${i}">${productOptionsHtml(compareSelection[i], excludeIds)}</select>
+      </div>`;
+  }).join('');
+
+  const selectedProducts = compareSelection.map(id => id ? getProduct(id) : null);
+  const items = compareSelection.map((id, i) => id ? { product: getProduct(id), color: COMPARE_COLORS[i] } : null).filter(Boolean);
+
+  let bodyHtml;
+  if (items.length === 0){
+    bodyHtml = `<p class="no-record" style="margin-top:18px;">比較する製品を選んでください(最大3つ)。</p>`;
+  } else {
+    function tdFor(fn){
+      return selectedProducts.map(p => {
+        if (!p) return `<td class="num">—</td>`;
+        const latest = sortedEntriesDesc(p)[0];
+        if (!latest) return `<td class="num">—</td>`;
+        return `<td class="num">${fn(p, latest)}</td>`;
+      }).join('');
+    }
+    const headerRow = `<tr><th></th>${selectedProducts.map(p => `<th>${p ? escapeHtml(p.name) : '(未選択)'}</th>`).join('')}</tr>`;
+    const catRow = `<tr><th>種類</th>${selectedProducts.map(p => `<td>${p ? `<span class="tag">${escapeHtml(p.category)}</span>` : '—'}</td>`).join('')}</tr>`;
+    const priceRow = `<tr><th>直近の価格</th>${tdFor((p,e) => yen(e.price))}</tr>`;
+    const specRow = `<tr><th>規格</th>${tdFor((p,e) => (e.specQty !== undefined && e.specQty !== null) ? `${e.specQty}${e.specUnit}` : '—')}</tr>`;
+    const kguRow = `<tr><th>単価</th>${tdFor((p,e) => { const r = calcUnitPrice(e); return r ? yenCalc(r.value) + '/' + (r.dim==='volume'?'L':'㎏') : '—'; })}</tr>`;
+    const usageRow = `<tr><th>使用量(日/頭)</th>${tdFor((p,e) => (e.usageQty !== undefined && e.usageQty !== null) ? `${e.usageQty}${e.usageUnit}` : '—')}</tr>`;
+    const perHeadRow = `<tr><th>一頭あたり単価(日)</th>${tdFor((p,e) => { const ph = calcPerHead(e); return ph !== null ? yenCalc(ph) + '/日' : '—'; })}</tr>`;
+    const herdDayRow = `<tr><th>牛群1日コスト</th>${tdFor((p,e) => { const v = herdDailyCost(calcPerHead(e)); return v !== null ? yenCalc(v) + '/日' : '—'; })}</tr>`;
+    const herdMonthRow = `<tr><th>牛群1か月コスト</th>${tdFor((p,e) => { const v = herdMonthlyCost(calcPerHead(e)); return v !== null ? yenCalc(v) + '/月' : '—'; })}</tr>`;
+    const roughFormRow = `<tr><th>形態(粗飼料)</th>${tdFor((p,e) => e.form ? escapeHtml(e.form) : '—')}</tr>`;
+    const roughKguRow = `<tr><th>㎏単価(粗飼料)</th>${tdFor((p,e) => { const v = roughageUnitPrice(e); return v !== null ? yenCalc(v) : '—'; })}</tr>`;
+    const roughDryKguRow = `<tr><th>乾物㎏単価(粗飼料)</th>${tdFor((p,e) => { const v = roughageDryUnitPrice(e); return v !== null ? yenCalc(v) : '—'; })}</tr>`;
+
+    bodyHtml = `
+      <div class="table-scroll" style="margin-top:18px;">
+        <table class="ledger">
+          <thead>${headerRow}</thead>
+          <tbody>${catRow}${priceRow}${specRow}${kguRow}${usageRow}${perHeadRow}${herdDayRow}${herdMonthRow}${roughFormRow}${roughKguRow}${roughDryKguRow}</tbody>
+        </table>
+      </div>
+
+      <div class="chart-toggle" style="margin-top:22px;">
+        <button data-cmp-metric="price" class="${compareMetric==='price'?'active':''}">価格</button>
+        <button data-cmp-metric="kgunit" class="${compareMetric==='kgunit'?'active':''}">単価(㎏/L)</button>
+        <button data-cmp-metric="perhead" class="${compareMetric==='perhead'?'active':''}">一頭あたり単価(日)</button>
+        <button data-cmp-metric="herdday" class="${compareMetric==='herdday'?'active':''}">牛群1日コスト</button>
+        <button data-cmp-metric="herdmonth" class="${compareMetric==='herdmonth'?'active':''}">牛群1か月コスト</button>
+        <button data-cmp-metric="roughkgunit" class="${compareMetric==='roughkgunit'?'active':''}">㎏単価(粗飼料)</button>
+        <button data-cmp-metric="roughdrykgunit" class="${compareMetric==='roughdrykgunit'?'active':''}">乾物㎏単価(粗飼料)</button>
+      </div>
+      <div class="chart-wrap">${buildCompareBarChart(items, compareMetric)}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="panel">
+      <h2 class="display" style="font-size:19px;margin:0 0 4px;">製品比較</h2>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;">最大3つの製品を選んで、単価や一頭あたりのコストを比べられます。</p>
+      <div class="compare-picker" style="margin-bottom:14px;">
+        <div class="field" style="max-width:180px;">
+          <label for="cmp-herd-size">経産牛頭数(頭)</label>
+          <input id="cmp-herd-size" type="number" min="0" step="1" value="${appData.herdSize !== null && appData.herdSize !== undefined ? appData.herdSize : ''}" placeholder="例: 50" />
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">入力すると、牛群全体の1日・1か月あたりのコストを計算します。</p>
+      <div class="compare-picker">${pickerHtml}</div>
+      ${bodyHtml}
+    </div>`;
+
+  document.getElementById('cmp-herd-size').addEventListener('change', e => {
+    const v = parseFloat(e.target.value);
+    appData.herdSize = (e.target.value === '' || isNaN(v) || v < 0) ? null : v;
+    saveData(); render();
+  });
+
+  [0,1,2].forEach(i => {
+    document.getElementById('cmp-select-'+i).addEventListener('change', e => {
+      compareSelection[i] = e.target.value || null;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-cmp-metric]').forEach(btn => {
+    btn.addEventListener('click', () => { compareMetric = btn.dataset.cmpMetric; render(); });
+  });
+}
+
+/* ---------------- event delegation ---------------- */
+document.getElementById('sidebar').addEventListener('click', e => {
+  const item = e.target.closest('[data-action="select-product"]');
+  if (item){ selectedProductId = item.dataset.id; render(); }
+});
+
+document.getElementById('main').addEventListener('click', e => {
+  const editProduct = e.target.closest('[data-action="edit-product"]');
+  if (editProduct){ openEditProductModal(editProduct.dataset.id); return; }
+
+  const editEntry = e.target.closest('[data-action="edit-entry"]');
+  if (editEntry){ openEditEntryModal(editEntry.dataset.product, editEntry.dataset.id); return; }
+
+  const managePhoto = e.target.closest('[data-action="manage-photo"]');
+  if (managePhoto){ openProductPhotoModal(managePhoto.dataset.id); return; }
+
+  const manageEntryPhotos = e.target.closest('[data-action="manage-entry-photos"]');
+  if (manageEntryPhotos){ openEntryPhotosModal(manageEntryPhotos.dataset.product, manageEntryPhotos.dataset.id); return; }
+
+  const delEntry = e.target.closest('[data-action="delete-entry"]');
+  if (delEntry){
+    const product = getProduct(selectedProductId);
+    openConfirmModal('記録を削除', 'この価格の記録を削除します。元に戻せません。', '削除する', () => {
+      const entry = product.entries.find(en => en.id === delEntry.dataset.id);
+      product.entries = product.entries.filter(en => en.id !== delEntry.dataset.id);
+      saveData(); render();
+      deleteEntryPhotoIfAny(entry);
+    });
+    return;
+  }
+  const delProduct = e.target.closest('[data-action="delete-product"]');
+  if (delProduct){
+    const product = getProduct(delProduct.dataset.id);
+    openConfirmModal('製品を削除', `「${product.name}」と、すべての価格記録を削除します。元に戻せません。`, '削除する', () => {
+      appData.products = appData.products.filter(p => p.id !== delProduct.dataset.id);
+      if (selectedProductId === delProduct.dataset.id){
+        selectedProductId = appData.products.length ? appData.products[0].id : null;
+      }
+      compareSelection = compareSelection.map(id => id === delProduct.dataset.id ? null : id);
+      saveData(); render();
+      product.entries.forEach(en => deleteEntryPhotoIfAny(en));
+      deleteProductPhotoIfAny(product);
+    });
+  }
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => { activeTab = btn.dataset.tab; render(); });
+});
+
+document.getElementById('btn-open-add-product').addEventListener('click', openAddProductModal);
+
+/* ---------------- init ---------------- */
+loadData();
+</script>
+</body>
+</html>
