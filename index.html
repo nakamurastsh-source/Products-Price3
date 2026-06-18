@@ -99,6 +99,9 @@
   .field{display:flex;flex-direction:column;gap:4px;}
   .field label{font-size:11px;color:var(--ink-soft);letter-spacing:.03em;}
   .field input,.field select{border:1px solid var(--line-strong);border-radius:var(--radius);padding:8px 9px;font-size:16px;font-family:'Noto Sans JP',sans-serif;background:#fff;min-width:0;}
+  .field textarea{border:1px solid var(--line-strong);border-radius:var(--radius);padding:8px 9px;font-size:16px;font-family:'Noto Sans JP',sans-serif;background:#fff;min-width:0;resize:vertical;width:100%;}
+  .field.memo{width:100%;}
+  td.memo-cell{white-space:normal;max-width:240px;word-break:break-word;}
   .field input[type="file"]{padding:6px 8px;font-size:14px;}
   .field input:focus-visible,.field select:focus-visible{outline:2px solid var(--indigo-soft);outline-offset:1px;}
   .field.date input{width:124px;font-family:'JetBrains Mono',monospace;}
@@ -662,6 +665,11 @@ function openAddProductModal(){
           </div>
         </div>
 
+        <div class="field memo">
+          <label for="m-memo">メモ(任意)</label>
+          <textarea id="m-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
+        </div>
+
         <div class="modal-actions">
           <button class="btn btn-ghost" id="btn-cancel-add">キャンセル</button>
           <button class="btn btn-primary" id="btn-confirm-add">追加する</button>
@@ -722,10 +730,11 @@ function openAddProductModal(){
     if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
     const enteredBy = document.getElementById('m-entered-by').value.trim();
     if (!enteredBy){ showToast('入力者名を入力してください'); document.getElementById('m-entered-by').focus(); return; }
+    const memo = document.getElementById('m-memo').value.trim();
 
     let entry;
     if (type === 'facility'){
-      entry = { id: uid('entry'), date, price, enteredBy, photoKeys: [], createdAt: Date.now() };
+      entry = { id: uid('entry'), date, price, enteredBy, memo, photoKeys: [], createdAt: Date.now() };
       const files = Array.from(document.getElementById('m-photo').files).slice(0, 10);
       for (const file of files){
         try{
@@ -753,6 +762,7 @@ function openAddProductModal(){
         weight, dmPercent, price,
         freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
         enteredBy,
+        memo,
         createdAt: Date.now()
       };
     } else {
@@ -769,6 +779,7 @@ function openAddProductModal(){
         price,
         usageQty, usageUnit: document.getElementById('m-usage-unit').value,
         enteredBy,
+        memo,
         createdAt: Date.now()
       };
       const extra = extraFieldsFor(category);
@@ -891,6 +902,10 @@ function openEditEntryModal(productId, entryId){
             <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
           </div>
           <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <div class="field memo">
+            <label for="ee-memo">メモ(任意)</label>
+            <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
+          </div>
           <p class="modal-msg">写真(最大10枚)は記録一覧の「写真」ボタンから管理できます。</p>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
@@ -943,6 +958,10 @@ function openEditEntryModal(productId, entryId){
             <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
           </div>
           <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <div class="field memo">
+            <label for="ee-memo">メモ(任意)</label>
+            <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
+          </div>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
             <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
@@ -1023,6 +1042,10 @@ function openEditEntryModal(productId, entryId){
             <input id="ee-entered-by" type="text" value="${escapeHtml(entry.enteredBy || '')}" />
           </div>
           <p class="modal-msg">入力日時: ${formatDateTime(entry.createdAt)}</p>
+          <div class="field memo">
+            <label for="ee-memo">メモ(任意)</label>
+            <textarea id="ee-memo" rows="2" placeholder="気になったことなど自由に">${escapeHtml(entry.memo || '')}</textarea>
+          </div>
           <div class="modal-actions">
             <button class="btn btn-ghost" id="btn-cancel-edit-entry">キャンセル</button>
             <button class="btn btn-primary" id="btn-save-edit-entry">保存</button>
@@ -1056,11 +1079,13 @@ function openEditEntryModal(productId, entryId){
     if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
     const enteredBy = document.getElementById('ee-entered-by').value.trim();
     if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+    const memo = document.getElementById('ee-memo').value.trim();
 
     if (type === 'facility'){
       entry.date = date;
       entry.price = price;
       entry.enteredBy = enteredBy;
+      entry.memo = memo;
     } else if (type === 'roughage'){
       const weight = parseFloat(document.getElementById('ee-weight').value);
       const dmPercent = parseFloat(document.getElementById('ee-dm-percent').value);
@@ -1079,6 +1104,7 @@ function openEditEntryModal(productId, entryId){
       entry.dmPercent = dmPercent;
       entry.freightPrice = freightRaw === '' ? null : parseFloat(freightRaw);
       entry.enteredBy = enteredBy;
+      entry.memo = memo;
     } else {
       const specQty = parseFloat(document.getElementById('ee-spec-qty').value);
       const usageQty = parseFloat(document.getElementById('ee-usage-qty').value);
@@ -1093,6 +1119,7 @@ function openEditEntryModal(productId, entryId){
       entry.usageQty = usageQty;
       entry.usageUnit = document.getElementById('ee-usage-unit').value;
       entry.enteredBy = enteredBy;
+      entry.memo = memo;
       const extra = extraFieldsFor(product.category);
       if (extra === 'colostrum'){
         const iggRaw = document.getElementById('ee-igg').value;
@@ -1502,19 +1529,24 @@ function renderMain(){
           <label for="f-photo">この記録の写真(任意・最大10枚)</label>
           <input id="f-photo" type="file" accept="image/*" multiple />
         </div>
+        <div class="field memo">
+          <label for="f-memo">メモ(任意)</label>
+          <textarea id="f-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
+        </div>
         <button type="submit" class="btn btn-primary">記録する</button>
       </form>`;
     entriesHtml = desc.length === 0 ? '' : `
       <div class="entries-title">記録一覧(${desc.length}件)</div>
       <div class="table-scroll">
       <table class="ledger">
-        <thead><tr><th>日付</th><th class="num">価格</th><th>入力者</th><th>入力日時</th><th></th></tr></thead>
+        <thead><tr><th>日付</th><th class="num">価格</th><th>入力者</th><th>入力日時</th><th>メモ</th><th></th></tr></thead>
         <tbody>
           ${desc.map(e => `<tr>
             <td class="mono">${dispDate(e.date)}</td>
             <td class="num">${yen(e.price)}</td>
             <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
             <td class="mono">${formatDateTime(e.createdAt)}</td>
+            <td class="memo-cell">${e.memo ? escapeHtml(e.memo) : '—'}</td>
             <td><div class="row-actions">
               <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
               <button class="btn btn-ghost btn-sm" data-action="manage-entry-photos" data-product="${product.id}" data-id="${e.id}">${(e.photoKeys && e.photoKeys.length) ? `写真(${e.photoKeys.length})` : '写真を追加'}</button>
@@ -1585,6 +1617,10 @@ function renderMain(){
           <label for="f-entered-by">入力者名</label>
           <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
         </div>
+        <div class="field memo">
+          <label for="f-memo">メモ(任意)</label>
+          <textarea id="f-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
+        </div>
         <button type="submit" class="btn btn-primary">記録する</button>
       </form>`;
 
@@ -1593,7 +1629,7 @@ function renderMain(){
       <div class="table-scroll">
       <table class="ledger">
         <thead><tr>
-          <th>日付</th><th>形態</th><th>メーカー</th><th class="num">重量(kg)</th><th class="num">乾物%</th><th class="num">乾物摂取量(kg)</th><th class="num">価格</th><th class="num">運賃込み価格</th><th class="num">㎏単価</th><th class="num">乾物㎏単価</th><th>入力者</th><th>入力日時</th><th></th>
+          <th>日付</th><th>形態</th><th>メーカー</th><th class="num">重量(kg)</th><th class="num">乾物%</th><th class="num">乾物摂取量(kg)</th><th class="num">価格</th><th class="num">運賃込み価格</th><th class="num">㎏単価</th><th class="num">乾物㎏単価</th><th>入力者</th><th>入力日時</th><th>メモ</th><th></th>
         </tr></thead>
         <tbody>
           ${desc.map(e => {
@@ -1613,6 +1649,7 @@ function renderMain(){
               <td class="num">${dku !== null ? yenCalc(dku) : '—'}</td>
               <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
               <td class="mono">${formatDateTime(e.createdAt)}</td>
+              <td class="memo-cell">${e.memo ? escapeHtml(e.memo) : '—'}</td>
               <td><div class="row-actions">
                 <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
                 <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
@@ -1714,6 +1751,10 @@ function renderMain(){
           <label for="f-entered-by">入力者名</label>
           <input id="f-entered-by" type="text" placeholder="例: 山田" value="${escapeHtml(getLastEnteredBy())}" required />
         </div>
+        <div class="field memo">
+          <label for="f-memo">メモ(任意)</label>
+          <textarea id="f-memo" rows="2" placeholder="気になったことなど自由に"></textarea>
+        </div>
         <button type="submit" class="btn btn-primary">記録する</button>
       </form>`;
 
@@ -1732,7 +1773,7 @@ function renderMain(){
       <div class="table-scroll">
       <table class="ledger">
         <thead><tr>
-          <th>日付</th><th>メーカー</th><th>規格</th><th class="num">価格</th><th class="num">使用量(日/頭)</th><th class="num">${ul}</th><th class="num">一頭あたり/日</th>${extraHeaderHtml}<th>入力者</th><th>入力日時</th><th></th>
+          <th>日付</th><th>メーカー</th><th>規格</th><th class="num">価格</th><th class="num">使用量(日/頭)</th><th class="num">${ul}</th><th class="num">一頭あたり/日</th>${extraHeaderHtml}<th>入力者</th><th>入力日時</th><th>メモ</th><th></th>
         </tr></thead>
         <tbody>
           ${desc.map(e => {
@@ -1749,6 +1790,7 @@ function renderMain(){
               ${extraCellFn(e)}
               <td>${e.enteredBy ? escapeHtml(e.enteredBy) : '—'}</td>
               <td class="mono">${formatDateTime(e.createdAt)}</td>
+              <td class="memo-cell">${e.memo ? escapeHtml(e.memo) : '—'}</td>
               <td><div class="row-actions">
                 <button class="edit-btn" data-action="edit-entry" data-product="${product.id}" data-id="${e.id}" title="編集">編集</button>
                 <button class="del-btn" data-action="delete-entry" data-id="${e.id}" title="この記録を削除">×</button>
@@ -1793,9 +1835,10 @@ function renderMain(){
       if (isNaN(price) || price < 0){ showToast('価格を正しく入力してください'); return; }
       const enteredBy = document.getElementById('f-entered-by').value.trim();
       if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      const memo = document.getElementById('f-memo').value.trim();
       const date = document.getElementById('f-date').value || todayStr();
       const files = Array.from(document.getElementById('f-photo').files).slice(0, 10);
-      const entry = { id: uid('entry'), date, price, enteredBy, photoKeys: [], createdAt: Date.now() };
+      const entry = { id: uid('entry'), date, price, enteredBy, memo, photoKeys: [], createdAt: Date.now() };
       for (const file of files){
         try{
           const dataUrl = await readAndCompressImage(file);
@@ -1835,6 +1878,7 @@ function renderMain(){
       }
       const enteredBy = document.getElementById('f-entered-by').value.trim();
       if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      const memo = document.getElementById('f-memo').value.trim();
       product.entries.push({
         id: uid('entry'),
         date: document.getElementById('f-date').value || todayStr(),
@@ -1843,6 +1887,7 @@ function renderMain(){
         weight, dmPercent, price,
         freightPrice: freightRaw === '' ? null : parseFloat(freightRaw),
         enteredBy,
+        memo,
         createdAt: Date.now()
       });
       setLastEnteredBy(enteredBy);
@@ -1862,6 +1907,7 @@ function renderMain(){
       }
       const enteredBy = document.getElementById('f-entered-by').value.trim();
       if (!enteredBy){ showToast('入力者名を入力してください'); return; }
+      const memo = document.getElementById('f-memo').value.trim();
       const newEntry = {
         id: uid('entry'),
         date: document.getElementById('f-date').value || todayStr(),
@@ -1870,6 +1916,7 @@ function renderMain(){
         price,
         usageQty, usageUnit: document.getElementById('f-usage-unit').value,
         enteredBy,
+        memo,
         createdAt: Date.now()
       };
       const extra = extraFieldsFor(product.category);
