@@ -201,7 +201,8 @@ const FACILITY_CATEGORY = '施設・設備';
 const ROUGHAGE_CATEGORY = '粗飼料';
 const COLOSTRUM_CATEGORY = '初乳製剤';
 const MILK_REPLACER_CATEGORY = '代用乳';
-const DEFAULT_CATEGORIES = ['脂肪酸カルシウム','添加剤','フットバス薬剤','サイレージ調整剤','バイパス蛋白','生菌剤', ROUGHAGE_CATEGORY, COLOSTRUM_CATEGORY, MILK_REPLACER_CATEGORY, FACILITY_CATEGORY];
+const DEFAULT_CATEGORIES = ['脂肪酸製剤','添加剤','フットバス薬剤','サイレージ調整剤','バイパス蛋白','生菌剤', ROUGHAGE_CATEGORY, COLOSTRUM_CATEGORY, MILK_REPLACER_CATEGORY, FACILITY_CATEGORY];
+const CATEGORY_RENAMES = { '脂肪酸カルシウム': '脂肪酸製剤' };
 const SPEC_UNITS = ['kg','g','L','mL'];
 const USAGE_UNITS = ['g','kg','mL','L'];
 const ROUGHAGE_FORMS = ['コンビラップ','バラ'];
@@ -477,6 +478,19 @@ async function loadData(){
   if (!appData.categories.includes(ROUGHAGE_CATEGORY)) appData.categories.push(ROUGHAGE_CATEGORY);
   if (!appData.categories.includes(COLOSTRUM_CATEGORY)) appData.categories.push(COLOSTRUM_CATEGORY);
   if (!appData.categories.includes(MILK_REPLACER_CATEGORY)) appData.categories.push(MILK_REPLACER_CATEGORY);
+  let categoryRenamed = false;
+  Object.entries(CATEGORY_RENAMES).forEach(([oldName, newName]) => {
+    const idx = appData.categories.indexOf(oldName);
+    if (idx !== -1){
+      if (appData.categories.includes(newName)) appData.categories.splice(idx, 1);
+      else appData.categories[idx] = newName;
+      categoryRenamed = true;
+    }
+    appData.products.forEach(p => {
+      if (p.category === oldName){ p.category = newName; categoryRenamed = true; }
+    });
+  });
+  if (categoryRenamed) saveData();
   appData.products.forEach(p => {
     p.entries.forEach(e => {
       if (!e.photoKeys){
